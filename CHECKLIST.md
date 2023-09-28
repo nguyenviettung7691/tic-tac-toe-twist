@@ -1,0 +1,5 @@
+- Getting 3 in a row horizontally works correctly
+- Getting 3 in a row vertically works correctly
+- Getting 3 in a row diagonally works correctly
+- When someone wins they are announced as the winner
+- The user has the ability to start a new game
