@@ -1,0 +1,9 @@
+{
+  "id": "26372-3100",
+  "pid": 26372,
+  "name": "Tic-Tac-Toe Twist AI",
+  "reflectionServerUrl": "http://localhost:3100",
+  "timestamp": "2025-09-17T03:59:25.799Z",
+  "genkitVersion": "nodejs/1.19.2",
+  "reflectionApiSpecVersion": 1
+}

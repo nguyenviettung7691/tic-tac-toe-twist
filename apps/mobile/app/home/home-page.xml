@@ -1,0 +1,84 @@
+<Page navigatingTo="onNavigatingTo" xmlns="http://schemas.nativescript.org/tns.xsd">
+  <ActionBar class="app-bar" flat="true">
+    <ActionBar.titleView>
+      <GridLayout columns="*,auto">
+        <FlexboxLayout class="brand">
+          <Image class="brand-icon" src="~/assets/logo.png" />
+          <Label class="brand-title">
+            <FormattedString>
+              <Span text="Tic-Tac-Toe" />
+              <Span text="Twist" class="twist" />
+            </FormattedString>
+          </Label>
+        </FlexboxLayout>
+      </GridLayout>
+    </ActionBar.titleView>
+  </ActionBar>
+  <ScrollView>
+    <StackLayout class="sheet">
+      <StackLayout class="section">
+        <Label class="section-heading" text="Game Setup" />
+        <FlexboxLayout class="segmented" justifyContent="center">
+          <Repeater items="{{ boardOptions }}">
+            <Repeater.itemsLayout>
+              <FlexboxLayout style="width: 100%"/>
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+              <StackLayout class="{{ `segmented-option${selected ? ' active' : ''}` }}" tap="onSelectBoard">
+                <Label horizontalAlignment="center" class="icon" text="{{ icon }}" />
+                <Label horizontalAlignment="center" text="{{ label }}" />
+              </StackLayout>
+            </Repeater.itemTemplate>
+          </Repeater>
+        </FlexboxLayout>
+      </StackLayout>
+
+      <StackLayout class="section">
+        <GridLayout columns="*,auto" rows="auto,auto">
+          <StackLayout row="0" col="0">
+            <Label class="slider-label" text="Win length" />
+            <Label class="slider-label-detail" text="{{ '(min: '+winLengthMin+', max: '+winLengthMax+')' }}" />
+          </StackLayout>
+          <Button row="0" col="1" text="AUTO" class="auto-chip" tap="onAutoWinLength" />
+          <Slider row="1" col="0" colSpan="2" minValue="{{ winLengthMin }}" maxValue="{{ winLengthMax }}" value="{{ winLength }}" step="1" valueChange="onWinLengthChanged" />
+        </GridLayout>
+        <Label class="slider-value" text="{{ winLengthLabel }}" />
+      </StackLayout>
+
+      <StackLayout class="section">
+        <Label class="section-heading" text="Variants" />
+        <Repeater items="{{ variantOptions }}">
+          <Repeater.itemTemplate>
+            <GridLayout columns="*,auto" class="variant-row" tap="onToggleVariant">
+              <StackLayout col="0">
+                <Label class="variant-title" text="{{ title }}" />
+                <Label class="variant-description" text="{{ description }}" textWrap="true" />
+              </StackLayout>
+              <Switch col="1" checked="{{ active }}"/>
+            </GridLayout>
+          </Repeater.itemTemplate>
+        </Repeater>
+      </StackLayout>
+
+      <StackLayout class="section">
+        <Label class="section-heading" text="Difficulty" />
+        <FlexboxLayout class="difficulty-group" justifyContent="center">
+          <Repeater items="{{ difficultyOptions }}">
+            <Repeater.itemsLayout>
+              <FlexboxLayout style="width: 100%"/>
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+              <StackLayout class="{{ `difficulty-chip${active ? ' active' : ''}` }}" tap="onSelectDifficulty">
+                <Label horizontalAlignment="center" class="difficulty-title" text="{{ title }}" />
+                <Label horizontalAlignment="center" class="difficulty-caption" text="{{ caption }}" />
+              </StackLayout>
+            </Repeater.itemTemplate>
+          </Repeater>
+        </FlexboxLayout>
+      </StackLayout>
+
+      <Button text="Start Game" class="primary-cta" tap="onStartGame" />
+      <Label text="How to play" class="secondary-link" tap="onHowToPlay" />
+    </StackLayout>
+  </ScrollView>
+</Page>

@@ -1,0 +1,55 @@
+<Page xmlns="http://schemas.nativescript.org/tns.xsd"
+      navigatingTo="onNavigatingTo"
+      navigatingFrom="onNavigatingFrom">
+  <ActionBar class="app-bar" flat="true">
+    <ActionBar.titleView>
+      <GridLayout columns="auto,*" class="app-bar">
+        <StackLayout class="logo-wrap" orientation="horizontal">
+          <StackLayout class="logo-mark">
+            <Label text="XO" />
+          </StackLayout>
+          <Label class="logo-title">
+            <FormattedString>
+              <Span text="Tic-Tac-Toe " />
+              <Span text="Twist" class="twist" />
+            </FormattedString>
+          </Label>
+        </StackLayout>
+      </GridLayout>
+    </ActionBar.titleView>
+    <NavigationButton text="Back" android.systemIcon="ic_menu_back" tap="onBack" />
+  </ActionBar>
+  <ScrollView>
+    <StackLayout class="screen" spacing="20">
+      <StackLayout class="card" spacing="8">
+        <Label text="{{ statusText }}" class="status" textWrap="true" />
+        <Label text="{{ variantSummary }}" class="meta" textWrap="true" />
+        <Label text="{{ difficultyLabel }}" class="meta" textWrap="true" />
+        <Label text="{{ hintText }}" class="meta" textWrap="true" />
+      </StackLayout>
+
+      <StackLayout class="board-shell">
+        <StackLayout class="{{ boardClass }}" horizontalAlignment="center">
+          <Repeater items="{{ boardRows }}">
+            <Repeater.itemTemplate>
+              <StackLayout orientation="horizontal" class="board-row">
+                <Repeater items="{{ cells }}">
+                  <Repeater.itemTemplate>
+                    <Label text="{{ text }}"
+                           class="{{ cssClass }}"
+                           tap="onCellTap" />
+                  </Repeater.itemTemplate>
+                </Repeater>
+              </StackLayout>
+            </Repeater.itemTemplate>
+          </Repeater>
+        </StackLayout>
+      </StackLayout>
+
+      <StackLayout class="card" spacing="12">
+        <Label text="Need a new twist?" class="section-title" />
+        <Button text="Change variants" class="cta-secondary" tap="onBack" />
+      </StackLayout>
+    </StackLayout>
+  </ScrollView>
+</Page>

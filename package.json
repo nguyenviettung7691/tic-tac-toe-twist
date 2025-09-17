@@ -1,0 +1,20 @@
+{
+  "name": "tic-tac-toe-twist",
+  "private": true,
+  "version": "0.1.0",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build:engine": "npm --workspace packages/engine run build",
+    "dev:ai": "npm --workspace services/ai run dev",
+    "build:ai": "npm --workspace services/ai run build",
+    "mobile:android": "node scripts/ns-mobile-run.js",
+    "debug:android": "ns debug android --emulator --path apps/mobile"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
