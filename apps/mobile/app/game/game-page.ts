@@ -3,7 +3,7 @@ import type { GestureEventData } from '@nativescript/core';
 import { legalMoves } from '@ttt/engine';
 
 import type { GameState } from '~/state/game-store';
-import { getSnapshot, playerMove, subscribe, type GameSnapshot } from '~/state/game-store';
+import { getSnapshot, playerMove, rematch, subscribe, type GameSnapshot } from '~/state/game-store';
 
 interface BoardCellVM {
   r: number;
@@ -19,7 +19,6 @@ interface BoardRowVM {
 
 let viewModel: Observable | null = null;
 let unsubscribe: (() => void) | null = null;
-let pendingResultNavigation = false;
 
 export function onNavigatingTo(args: NavigatedData) {
   const page = args.object as Page;
@@ -27,7 +26,7 @@ export function onNavigatingTo(args: NavigatedData) {
   page.bindingContext = viewModel;
 
   unsubscribe?.();
-  unsubscribe = subscribe((snapshot) => updateViewModel(viewModel!, snapshot, page));
+  unsubscribe = subscribe((snapshot) => updateViewModel(viewModel!, snapshot));
 
   const snapshot = getSnapshot();
   if (!snapshot.game) {
@@ -38,7 +37,6 @@ export function onNavigatingTo(args: NavigatedData) {
 export function onNavigatingFrom() {
   unsubscribe?.();
   unsubscribe = null;
-  pendingResultNavigation = false;
 }
 
 export function onCellTap(args: GestureEventData) {
@@ -58,6 +56,15 @@ export function onBack() {
   }
 }
 
+export function onRematch() {
+  rematch();
+}
+
+export function onChangeVariants() {
+  const frame = Frame.topmost();
+  frame.navigate({ moduleName: 'home/home-page', clearHistory: true });
+}
+
 function createViewModel() {
   const vm = new Observable();
   vm.set('statusText', 'Preparing game...');
@@ -66,9 +73,15 @@ function createViewModel() {
   vm.set('boardRows', [] as BoardRowVM[]);
   vm.set('boardClass', 'board board-3');
   vm.set('busy', false);
+  vm.set('hintText', '');
+  vm.set('resultVisible', false);
+  vm.set('resultTitle', '');
+  vm.set('resultSummary', '');
+  vm.set('resultVariantSummary', '');
+  vm.set('resultDifficultyLabel', '');
   return vm;
 }
-function updateViewModel(vm: Observable, snapshot: GameSnapshot, page: Page) {
+function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
   const { game, busy, settings } = snapshot;
   vm.set('busy', busy);
 
@@ -78,6 +91,11 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot, page: Page) {
     vm.set('difficultyLabel', '');
     vm.set('statusText', 'Head back to the home screen to start a new match.');
     vm.set('hintText', '');
+    vm.set('resultVisible', false);
+    vm.set('resultTitle', '');
+    vm.set('resultSummary', '');
+    vm.set('resultVariantSummary', '');
+    vm.set('resultDifficultyLabel', '');
     return;
   }
 
@@ -88,17 +106,21 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot, page: Page) {
   vm.set('hintText', buildHintText(game, settings.gravity));
   vm.set('boardRows', buildBoardRows(game, busy));
 
-  if (game.winner && !pendingResultNavigation) {
-    pendingResultNavigation = true;
-    setTimeout(() => {
-      const frame = Frame.topmost();
-      if (frame.currentPage === page) {
-        frame.navigate('result/result-page');
-      }
-      pendingResultNavigation = false;
-    }, 350);
+  const hasResult = !!game.winner;
+  vm.set('resultVisible', hasResult);
+  if (hasResult) {
+    vm.set('resultTitle', buildResultTitle(game));
+    vm.set('resultSummary', buildResultSummary(game));
+    vm.set('resultVariantSummary', formatVariantSummary(game));
+    vm.set('resultDifficultyLabel', formatResultDifficulty(settings.difficulty));
+  } else {
+    vm.set('resultTitle', '');
+    vm.set('resultSummary', '');
+    vm.set('resultVariantSummary', '');
+    vm.set('resultDifficultyLabel', '');
   }
 }
+
 
 function buildBoardRows(game: GameState, busy: boolean): BoardRowVM[] {
   const isHumanTurn = !busy && !game.winner && game.current === 'X';
@@ -176,6 +198,25 @@ function buildStatusText(game: GameState, busy: boolean): string {
   return 'Waiting for opponent.';
 }
 
+function buildResultTitle(game: GameState): string {
+  if (game.winner === 'Draw') {
+    return "It's a draw!";
+  }
+  if (game.winner === 'X') {
+    return 'Victory!';
+  }
+  if (game.winner === 'O') {
+    return 'Defeat this time';
+  }
+  return 'Match complete';
+}
+
+function buildResultSummary(game: GameState): string {
+  const moves = game.moves.length;
+  const turns = moves === 1 ? '1 move' : moves + ' moves';
+  return 'Finished after ' + turns + '.';
+}
+
 function formatVariantSummary(game: GameState): string {
   const parts: string[] = [];
   if (game.config.gravity) {
@@ -197,6 +238,19 @@ function formatDifficulty(value: GameSnapshot['settings']['difficulty']): string
       return 'Difficulty: Creative';
     default:
       return 'Difficulty: Balanced';
+  }
+}
+
+function formatResultDifficulty(value: GameSnapshot['settings']['difficulty']): string {
+  switch (value) {
+    case 'chill':
+      return 'Played on Chill difficulty';
+    case 'sharp':
+      return 'Played on Sharp difficulty';
+    case 'creative':
+      return 'Played on Creative difficulty';
+    default:
+      return 'Played on Balanced difficulty';
   }
 }
 

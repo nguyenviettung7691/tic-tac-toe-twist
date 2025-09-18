@@ -7,7 +7,9 @@ import {
   Page,
   PropertyChangeData,
   ListPicker,
-  CoreTypes
+  CoreTypes,
+  EventData,
+  Switch
 } from '@nativescript/core';
 
 import { startNewGame } from '~/state/game-store';
@@ -59,6 +61,23 @@ export async function onToggleVariant(args: GestureEventData) {
   const context = tile.bindingContext as VariantOptionVm;
   viewModel.toggleVariant(context.key);
   await animateTap(tile);
+}
+
+export function onVariantToggleChange(args: EventData) {
+  if (!viewModel) {
+    return;
+  }
+  const control = args.object as Switch;
+  const context = control.bindingContext as VariantOptionVm | undefined;
+  if (!context) {
+    return;
+  }
+  const desired = control.checked;
+  const current = !!viewModel.get(context.key);
+  if (current === desired) {
+    return;
+  }
+  viewModel.toggleVariant(context.key, desired);
 }
 
 export function onWinLengthChanged(args: PropertyChangeData) {

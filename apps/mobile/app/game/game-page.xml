@@ -19,35 +19,47 @@
   </ActionBar>
   <ScrollView>
     <StackLayout class="screen" spacing="20">
-      <StackLayout class="card" padding="10" spacing="8">
+      <StackLayout class="card game-info" padding="10" spacing="8" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
         <Label text="{{ statusText }}" class="status" textWrap="true" />
         <Label text="{{ variantSummary }}" textWrap="true" />
         <Label text="{{ difficultyLabel }}" textWrap="true" />
         <Label text="{{ hintText }}" class="meta" textWrap="true" />
       </StackLayout>
 
+      <StackLayout class="card result-card" padding="10" spacing="12" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
+        <Label text="{{ resultTitle }}" class="result-title" textWrap="true" />
+        <Label text="{{ resultSummary }}" class="result-summary" textWrap="true" />
+        <Label text="{{ resultVariantSummary }}" class="result-summary" textWrap="true" />
+        <Label text="{{ resultDifficultyLabel }}" class="result-summary" textWrap="true" />
+      </StackLayout>
+
       <FlexboxLayout class="board-shell" justifyContent="center">
-        <FlexboxLayout class="{{ boardClass }}">
+        <StackLayout class="{{ boardClass }}" orientation="vertical">
           <Repeater items="{{ boardRows }}">
-            <Repeater.itemsLayout>
-              <FlexboxLayout/>
-            </Repeater.itemsLayout>
             <Repeater.itemTemplate>
-              <StackLayout class="board-row">
+              <FlexboxLayout class="board-row" flexDirection="row" justifyContent="center">
                 <Repeater items="{{ cells }}">
+                  <Repeater.itemsLayout>
+                    <FlexboxLayout flexDirection="row" />
+                  </Repeater.itemsLayout>
                   <Repeater.itemTemplate>
                     <Label text="{{ text }}"
                            class="{{ cssClass }}"
                            tap="onCellTap" />
                   </Repeater.itemTemplate>
                 </Repeater>
-              </StackLayout>
+              </FlexboxLayout>
             </Repeater.itemTemplate>
           </Repeater>
-        </FlexboxLayout>
+        </StackLayout>
       </FlexboxLayout>
 
-      <StackLayout class="card" padding="10" spacing="12">
+      <FlexboxLayout class="result-actions" flexDirection="row" justifyContent="center" alignItems="center" gap="16" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
+        <Button text="Rematch" tap="onRematch" />
+        <Button text="Change variants" tap="onChangeVariants" />
+      </FlexboxLayout>
+
+      <StackLayout class="card game-actions" padding="10" spacing="12" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
         <Label text="Need a new twist?" class="section-title" />
         <Button text="Change variants" class="cta-secondary" tap="onBack" />
       </StackLayout>

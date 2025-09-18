@@ -36,9 +36,8 @@
       <StackLayout class="section">
         <GridLayout columns="*,auto">
           <StackLayout col="0">
-            <Label class="slider-label" text="Win length 📏" />
+            <Label class="slider-label" text="{{ `Win length ${winLengthLabel}` }} " />
             <Label class="meta" text="Choose how many in a row wins the game." textWrap="true" />
-            <Label text="{{ winLengthLabel }}" />
           </StackLayout>
           <ListPicker col="1" items="{{ winLengthArray }}" selectedIndex="{{ winLengthIndex }}" selectedIndexChange="onWinLengthChanged" />
         </GridLayout>
@@ -53,7 +52,7 @@
                 <Label class="variant-title" text="{{ title + ' ' + icon }}" />
                 <Label class="variant-description" text="{{ description }}" textWrap="true" />
               </StackLayout>
-              <Switch col="1" checked="{{ active }}"/>
+              <Switch col="1" checked="{{ active }}" checkedChange="onVariantToggleChange" />
             </GridLayout>
           </Repeater.itemTemplate>
         </Repeater>

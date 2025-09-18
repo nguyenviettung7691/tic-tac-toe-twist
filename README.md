@@ -187,9 +187,7 @@ apps/mobile/app
   - home
     - home-page.xml/ts/css    # variant toggles + difficulty + start
   - game
-    - game-page.xml/ts/css    # grid/board, animations, power UI
-  - result
-    - result-page.xml/ts/css  # confetti, stats, replay
+    - game-page.xml/ts/css    # grid/board, animations, power UI, inline results
   - profile
     - profile-page.xml/ts/css # achievements
 - services
@@ -211,7 +209,7 @@ Next Steps
 
 1) Generate the NativeScript app under `apps/mobile` and wire the engine.
 2) Run the Genkit AI service and test `/move` from the app.
-3) Implement UI flows (home → game → result, with replay).
+3) Implement UI flows (home → game with inline result + replay).
 4) Add achievements tracking, then optional Firebase auth/sync.
 5) Iterate on variants and animations.
 
