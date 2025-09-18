@@ -21,11 +21,18 @@ ActionBar {
   android-elevation: 0;
 }
 
+ListPicker {
+  border-width: 2;
+  border-color: var(--color-outline);
+  border-radius: 12;
+  background-color: var(--color-background);
+}
+
 .app-bar {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  padding: 12 20;
+  padding: 10 15;
   border-bottom-width: 1.5;
   border-bottom-color: rgba(37, 123, 222, 0.25);
 }
@@ -59,13 +66,13 @@ ActionBar {
 }
 
 .sheet {
-  margin: 20;
-  padding: 24;
+  margin: 15;
+  padding: 20;
   border-radius: 28;
   background-color: var(--color-sheet);
   border-width: 1.5;
   border-color: rgba(37, 123, 222, 0.35);
-  gap: 24;
+  gap: 20;
 }
 
 .section {
@@ -80,7 +87,14 @@ ActionBar {
   margin-bottom: 5;
 }
 
-.section-subtitle,
+.section-subtitle{
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 16;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-bottom: 4;
+}
+
 .meta,
 .variant-description,
 .difficulty-caption,
@@ -123,13 +137,12 @@ ActionBar {
 }
 
 .variant-row {
-  padding: 12 0;
-  border-bottom-width: 1;
-  border-bottom-color: rgba(31, 44, 63, 0.08);
-}
-
-.variant-row:last-child {
-  border-bottom-width: 0;
+  padding: 10;
+  margin-bottom: 10;
+  border-radius: 12;
+  border-width: 2;
+  border-color: var(--color-outline);
+  background-color: var(--color-background);
 }
 
 .variant-title {
@@ -193,7 +206,6 @@ ActionBar {
 
 .primary-cta {
   margin-top: 8;
-  padding: 16;
   border-radius: 999;
   background-color: var(--color-deep-blue);
   color: white;
