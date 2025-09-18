@@ -249,6 +249,12 @@ ActionBar {
   border-color: rgba(126, 207, 255, 0.2);
 }
 
+.cell-winning {
+  background-color: rgba(255, 223, 88, 0.55);
+  border-color: #ffd54f;
+  border-width: 3;
+}
+
 .board-4 .cell {
   width: 68;
   height: 68;

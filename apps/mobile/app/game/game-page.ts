@@ -1,6 +1,7 @@
 import { Frame, NavigatedData, Observable, Page } from '@nativescript/core';
 import type { GestureEventData } from '@nativescript/core';
 import { legalMoves } from '@ttt/engine';
+import type { Player } from '@ttt/engine';
 
 import type { GameState } from '~/state/game-store';
 import { getSnapshot, playerMove, rematch, subscribe, type GameSnapshot } from '~/state/game-store';
@@ -11,6 +12,7 @@ interface BoardCellVM {
   text: string;
   cssClass: string;
   interactive: boolean;
+  winning: boolean;
 }
 
 interface BoardRowVM {
@@ -104,7 +106,10 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
   vm.set('difficultyLabel', formatDifficulty(settings.difficulty));
   vm.set('statusText', buildStatusText(game, busy));
   vm.set('hintText', buildHintText(game, settings.gravity));
-  vm.set('boardRows', buildBoardRows(game, busy));
+
+  const winningLine = game.winner && game.winner !== 'Draw' ? findWinningLine(game) : null;
+  const winningCells = winningLine ? new Set(winningLine.map(({ r, c }) => `${r}:${c}`)) : undefined;
+  vm.set('boardRows', buildBoardRows(game, busy, winningCells));
 
   const hasResult = !!game.winner;
   vm.set('resultVisible', hasResult);
@@ -122,7 +127,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
 }
 
 
-function buildBoardRows(game: GameState, busy: boolean): BoardRowVM[] {
+function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<string>): BoardRowVM[] {
   const isHumanTurn = !busy && !game.winner && game.current === 'X';
   const legal = new Set<string>();
   if (isHumanTurn) {
@@ -136,6 +141,7 @@ function buildBoardRows(game: GameState, busy: boolean): BoardRowVM[] {
       const key = `${r}:${c}`;
       const classes = ['cell'];
       let text = '';
+      const winning = winningCells?.has(key) ?? false;
 
       if (cell === 'X' || cell === 'O') {
         text = cell;
@@ -149,6 +155,10 @@ function buildBoardRows(game: GameState, busy: boolean): BoardRowVM[] {
         classes.push('cell-last');
       }
 
+      if (winning) {
+        classes.push('cell-winning');
+      }
+
       const interactive = isHumanTurn && legal.has(key) && cell === null;
       if (interactive) {
         classes.push('cell-legal');
@@ -160,6 +170,7 @@ function buildBoardRows(game: GameState, busy: boolean): BoardRowVM[] {
         text,
         cssClass: classes.join(' '),
         interactive,
+        winning,
       };
     }),
   }));
@@ -174,7 +185,13 @@ function buildHintText(game: GameState, gravityEnabled: boolean): string {
     if (gravityEnabled && game.config.gravity) {
       return 'Tip: gravity drops marks down! Aim above the open spot.';
     }
+    if (game.config.wrap) {
+      return 'Tip: wrap connects opposite edges—use corners to loop lines.';
+    }
     return 'Tip: tap a highlighted cell to place your mark.';
+  }
+  if (game.config.wrap) {
+    return 'Wrap is on: watch for lines that loop across edges.';
   }
   return '';
 }
@@ -196,6 +213,78 @@ function buildStatusText(game: GameState, busy: boolean): string {
     return 'Your turn. Tap a highlighted cell.';
   }
   return 'Waiting for opponent.';
+}
+
+function findWinningLine(game: GameState): { r: number; c: number }[] | null {
+  if (!game.winner || game.winner === 'Draw') {
+    return null;
+  }
+  const n = game.board.length;
+  const need = game.config.winLength;
+  const wrap = !!game.config.wrap;
+
+  const normalize = (value: number) => ((value % n) + n) % n;
+
+  const cell = (r: number, c: number) => {
+    if (wrap) {
+      return game.board[normalize(r)][normalize(c)];
+    }
+    if (r < 0 || c < 0 || r >= n || c >= n) {
+      return 'B';
+    }
+    return game.board[r][c];
+  };
+
+  const dirs: Array<[number, number]> = [
+    [0, 1],
+    [1, 0],
+    [1, 1],
+    [1, -1],
+  ];
+
+  for (let sr = 0; sr < n; sr++) {
+    for (let sc = 0; sc < n; sc++) {
+      for (const [dr, dc] of dirs) {
+        const coords: { r: number; c: number }[] = [];
+        let occupant: Player | null = null;
+        let valid = true;
+        for (let k = 0; k < need; k++) {
+          const rr = sr + dr * k;
+          const cc = sc + dc * k;
+          const value = cell(rr, cc);
+          if (value !== 'X' && value !== 'O') {
+            valid = false;
+            break;
+          }
+          if (!occupant) {
+            occupant = value;
+          } else if (value !== occupant) {
+            valid = false;
+            break;
+          }
+          const nr = wrap ? normalize(rr) : rr;
+          const nc = wrap ? normalize(cc) : cc;
+          coords.push({ r: nr, c: nc });
+        }
+        if (valid && coords.length === need && occupant) {
+          const expectedWinner = game.config.misere ? (occupant === 'X' ? 'O' : 'X') : occupant;
+          if (expectedWinner === game.winner) {
+            const seen = new Set<string>();
+            const unique: { r: number; c: number }[] = [];
+            for (const coord of coords) {
+              const key = `${coord.r}:${coord.c}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                unique.push(coord);
+              }
+            }
+            return unique;
+          }
+        }
+      }
+    }
+  }
+  return null;
 }
 
 function buildResultTitle(game: GameState): string {

@@ -212,9 +212,3 @@ Next Steps
 3) Implement UI flows (home → game with inline result + replay).
 4) Add achievements tracking, then optional Firebase auth/sync.
 5) Iterate on variants and animations.
-
-
-
-
-
-
