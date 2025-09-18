@@ -150,7 +150,7 @@ function buildHintText(game: GameState, gravityEnabled: boolean): string {
   }
   if (game.moves.length <= 1) {
     if (gravityEnabled && game.config.gravity) {
-      return 'Tip: gravity drops marks down — aim above the open spot.';
+      return 'Tip: gravity drops marks down! Aim above the open spot.';
     }
     return 'Tip: tap a highlighted cell to place your mark.';
   }

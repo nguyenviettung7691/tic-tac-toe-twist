@@ -3,36 +3,37 @@
       navigatingFrom="onNavigatingFrom">
   <ActionBar class="app-bar" flat="true">
     <ActionBar.titleView>
-      <GridLayout columns="auto,*" class="app-bar">
-        <StackLayout class="logo-wrap" orientation="horizontal">
-          <StackLayout class="logo-mark">
-            <Label text="XO" />
-          </StackLayout>
-          <Label class="logo-title">
+      <GridLayout columns="auto,*">
+        <FlexboxLayout class="brand">
+          <Image class="brand-icon" src="~/assets/logo.png" />
+          <Label class="brand-title">
             <FormattedString>
-              <Span text="Tic-Tac-Toe " />
+              <Span text="Tic-Tac-Toe" />
               <Span text="Twist" class="twist" />
             </FormattedString>
           </Label>
-        </StackLayout>
+        </FlexboxLayout>
       </GridLayout>
     </ActionBar.titleView>
     <NavigationButton text="Back" android.systemIcon="ic_menu_back" tap="onBack" />
   </ActionBar>
   <ScrollView>
     <StackLayout class="screen" spacing="20">
-      <StackLayout class="card" spacing="8">
+      <StackLayout class="card" padding="10" spacing="8">
         <Label text="{{ statusText }}" class="status" textWrap="true" />
-        <Label text="{{ variantSummary }}" class="meta" textWrap="true" />
-        <Label text="{{ difficultyLabel }}" class="meta" textWrap="true" />
+        <Label text="{{ variantSummary }}" textWrap="true" />
+        <Label text="{{ difficultyLabel }}" textWrap="true" />
         <Label text="{{ hintText }}" class="meta" textWrap="true" />
       </StackLayout>
 
-      <StackLayout class="board-shell">
-        <StackLayout class="{{ boardClass }}" horizontalAlignment="center">
+      <FlexboxLayout class="board-shell" justifyContent="center">
+        <FlexboxLayout class="{{ boardClass }}">
           <Repeater items="{{ boardRows }}">
+            <Repeater.itemsLayout>
+              <FlexboxLayout/>
+            </Repeater.itemsLayout>
             <Repeater.itemTemplate>
-              <StackLayout orientation="horizontal" class="board-row">
+              <StackLayout class="board-row">
                 <Repeater items="{{ cells }}">
                   <Repeater.itemTemplate>
                     <Label text="{{ text }}"
@@ -43,10 +44,10 @@
               </StackLayout>
             </Repeater.itemTemplate>
           </Repeater>
-        </StackLayout>
-      </StackLayout>
+        </FlexboxLayout>
+      </FlexboxLayout>
 
-      <StackLayout class="card" spacing="12">
+      <StackLayout class="card" padding="10" spacing="12">
         <Label text="Need a new twist?" class="section-title" />
         <Button text="Change variants" class="cta-secondary" tap="onBack" />
       </StackLayout>

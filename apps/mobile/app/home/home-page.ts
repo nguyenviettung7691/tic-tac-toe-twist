@@ -1,12 +1,13 @@
 
 import {
   Dialogs,
-  EventData,
   Frame,
   GestureEventData,
   NavigatedData,
   Page,
-  Slider,
+  PropertyChangeData,
+  ListPicker,
+  CoreTypes
 } from '@nativescript/core';
 
 import { startNewGame } from '~/state/game-store';
@@ -60,16 +61,12 @@ export async function onToggleVariant(args: GestureEventData) {
   await animateTap(tile);
 }
 
-export function onWinLengthChanged(args: EventData) {
+export function onWinLengthChanged(args: PropertyChangeData) {
   if (!viewModel) {
     return;
   }
-  const slider = args.object as Slider;
-  viewModel.setWinLength(slider.value);
-}
-
-export function onAutoWinLength() {
-  viewModel?.setAutoWinLength();
+  const picker = args.object as ListPicker;
+  viewModel.setWinLength(picker.items[picker.selectedIndex] as number);
 }
 
 export function onHowToPlay() {
@@ -94,10 +91,6 @@ async function animateTap(target: any) {
   if (!target || typeof target.animate !== 'function') {
     return;
   }
-  try {
-    await target.animate({ scale: { x: 0.94, y: 0.94 }, duration: 80, curve: 'easeOut' });
-    await target.animate({ scale: { x: 1, y: 1 }, duration: 120, curve: 'spring' });
-  } catch (err) {
-    // best effort animation
-  }
+  await target.animate({ scale: { x: 0.94, y: 0.94 }, opacity: 0.9, duration: 80, curve: CoreTypes.AnimationCurve.easeIn });
+  await target.animate({ scale: { x: 1, y: 1 }, opacity: 1, duration: 120, curve: CoreTypes.AnimationCurve.easeOut });
 }

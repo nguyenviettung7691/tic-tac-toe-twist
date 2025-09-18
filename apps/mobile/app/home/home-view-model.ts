@@ -5,7 +5,6 @@ import type { Difficulty } from '@ttt/engine';
 import { getSnapshot, type GameSetup } from '~/state/game-store';
 
 type VariantKey = 'gravity' | 'wrap';
-
 type BoardSegment = {
   size: 3 | 4 | 5;
   label: string;
@@ -19,9 +18,9 @@ const BOARD_SEGMENTS: BoardSegment[] = [
 ];
 
 const DIFFICULTY_META: Array<{ key: Difficulty; title: string; caption: string }> = [
-  { key: 'chill', title: 'Chill', caption: 'learn & vibe' },
-  { key: 'balanced', title: 'Balanced', caption: 'smart, fair play' },
-  { key: 'sharp', title: 'Sharp', caption: 'max brain burn' },
+  { key: 'chill', title: '🤓 Chill', caption: 'learn & vibe' },
+  { key: 'balanced', title: '🤔 Balanced', caption: 'smart, fair play' },
+  { key: 'sharp', title: '👿 Sharp', caption: 'max brain burn' },
 ];
 
 export interface BoardOptionVm {
@@ -46,7 +45,6 @@ export interface VariantOptionVm {
   description: string;
   icon: string;
   active: boolean;
-  knobOffset: number;
 }
 
 export class HomeViewModel extends Observable {
@@ -68,6 +66,7 @@ export class HomeViewModel extends Observable {
     this.set('boardSizeIndex', initialBoardIndex);
     this.set('difficultyIndex', initialDifficultyIndex);
     this.set('winLength', setup.winLength);
+    this.set('winLengthIndex', 0);
     this.set('gravity', setup.gravity);
     this.set('wrap', setup.wrap);
 
@@ -96,12 +95,6 @@ export class HomeViewModel extends Observable {
     const clamped = this.clampWinLength(value);
     this.set('winLength', clamped);
     this.updateWinLengthLabel(clamped);
-  }
-
-  setAutoWinLength(): void {
-    const boardSize = this.getSelectedBoardSize();
-    const auto = boardSize === 3 ? 3 : 4;
-    this.setWinLength(auto);
   }
 
   toggleVariant(key: VariantKey, next?: boolean): void {
@@ -141,17 +134,15 @@ export class HomeViewModel extends Observable {
         key: 'gravity',
         title: 'Gravity',
         description: 'Marks fall to the lowest empty cell.',
-        icon: '⤵',
-        active: !!this.get('gravity'),
-        knobOffset: !!this.get('gravity') ? 32 : 0,
+        icon: '⬇️',
+        active: !!this.get('gravity')
       },
       {
         key: 'wrap',
         title: 'Wrap edges',
         description: 'Lines continue across opposite edges.',
-        icon: '↺',
-        active: !!this.get('wrap'),
-        knobOffset: !!this.get('wrap') ? 32 : 0,
+        icon: '🔄',
+        active: !!this.get('wrap')
       },
     ];
     this.set('variantOptions', variants);
@@ -190,6 +181,8 @@ export class HomeViewModel extends Observable {
     const max = Math.min(boardSize, 4);
     this.set('winLengthMin', min);
     this.set('winLengthMax', max);
+    this.set('winLengthArray', [...Array(max - min + 1).keys()].map(i => i + min));
+    this.set('winLengthIndex', 0);
 
     const current = this.get('winLength');
     const clamped = this.clampWinLength(
@@ -202,6 +195,6 @@ export class HomeViewModel extends Observable {
   }
 
   private updateWinLengthLabel(value: number) {
-    this.set('winLengthLabel', `${value} in a row`);
+    this.set('winLengthLabel', `${"❌".repeat(value)}`);
   }
 }

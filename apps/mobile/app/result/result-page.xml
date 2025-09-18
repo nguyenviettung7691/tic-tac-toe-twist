@@ -1,29 +1,26 @@
 <Page xmlns="http://schemas.nativescript.org/tns.xsd" navigatingTo="onNavigatingTo">
   <ActionBar class="app-bar" flat="true">
     <ActionBar.titleView>
-      <GridLayout columns="auto,*" class="app-bar">
-        <StackLayout class="logo-wrap" orientation="horizontal">
-          <StackLayout class="logo-mark">
-            <Label text="XO" />
-          </StackLayout>
-          <Label class="logo-title">
+      <GridLayout columns="auto,*">
+        <FlexboxLayout class="brand">
+          <Image class="brand-icon" src="~/assets/logo.png" />
+          <Label class="brand-title">
             <FormattedString>
-              <Span text="Tic-Tac-Toe " />
+              <Span text="Tic-Tac-Toe" />
               <Span text="Twist" class="twist" />
             </FormattedString>
           </Label>
-        </StackLayout>
+        </FlexboxLayout>
       </GridLayout>
     </ActionBar.titleView>
   </ActionBar>
   <ScrollView>
     <StackLayout class="screen" spacing="24">
-      <StackLayout class="card" spacing="12">
+      <StackLayout class="card" padding="10" spacing="12">
         <Label text="{{ title }}" class="result-title" textWrap="true" />
         <Label text="{{ summary }}" class="result-summary" textWrap="true" />
         <Label text="{{ variantSummary }}" class="result-summary" textWrap="true" />
         <Label text="{{ difficultyLabel }}" class="result-summary" textWrap="true" />
-        <Label text="Moves: {{ movesCount }}" class="result-summary" />
       </StackLayout>
 
       <FlexboxLayout class="result-actions" flexDirection="row" justifyContent="center" alignItems="center" gap="16">

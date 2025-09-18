@@ -17,7 +17,7 @@
   <ScrollView>
     <StackLayout class="sheet">
       <StackLayout class="section">
-        <Label class="section-heading" text="Game Setup" />
+        <Label class="section-heading" text="Game Setup ⚙️" />
         <FlexboxLayout class="segmented" justifyContent="center">
           <Repeater items="{{ boardOptions }}">
             <Repeater.itemsLayout>
@@ -34,24 +34,23 @@
       </StackLayout>
 
       <StackLayout class="section">
-        <GridLayout columns="*,auto" rows="auto,auto">
-          <StackLayout row="0" col="0">
-            <Label class="slider-label" text="Win length" />
-            <Label class="slider-label-detail" text="{{ '(min: '+winLengthMin+', max: '+winLengthMax+')' }}" />
+        <GridLayout columns="*,auto">
+          <StackLayout col="0">
+            <Label class="slider-label" text="Win length 📏" />
+            <Label class="meta" text="Choose how many in a row wins the game." textWrap="true" />
+            <Label text="{{ winLengthLabel }}" />
           </StackLayout>
-          <Button row="0" col="1" text="AUTO" class="auto-chip" tap="onAutoWinLength" />
-          <Slider row="1" col="0" colSpan="2" minValue="{{ winLengthMin }}" maxValue="{{ winLengthMax }}" value="{{ winLength }}" step="1" valueChange="onWinLengthChanged" />
+          <ListPicker col="1" items="{{ winLengthArray }}" selectedIndex="{{ winLengthIndex }}" selectedIndexChange="onWinLengthChanged" />
         </GridLayout>
-        <Label class="slider-value" text="{{ winLengthLabel }}" />
       </StackLayout>
 
       <StackLayout class="section">
-        <Label class="section-heading" text="Variants" />
+        <Label class="section-heading" text="Variants 🧪" />
         <Repeater items="{{ variantOptions }}">
           <Repeater.itemTemplate>
             <GridLayout columns="*,auto" class="variant-row" tap="onToggleVariant">
               <StackLayout col="0">
-                <Label class="variant-title" text="{{ title }}" />
+                <Label class="variant-title" text="{{ title + ' ' + icon }}" />
                 <Label class="variant-description" text="{{ description }}" textWrap="true" />
               </StackLayout>
               <Switch col="1" checked="{{ active }}"/>
@@ -61,7 +60,7 @@
       </StackLayout>
 
       <StackLayout class="section">
-        <Label class="section-heading" text="Difficulty" />
+        <Label class="section-heading" text="Difficulty 🧠" />
         <FlexboxLayout class="difficulty-group" justifyContent="center">
           <Repeater items="{{ difficultyOptions }}">
             <Repeater.itemsLayout>
@@ -82,3 +81,4 @@
     </StackLayout>
   </ScrollView>
 </Page>
+
