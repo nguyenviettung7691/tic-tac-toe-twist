@@ -325,8 +325,9 @@ function renderConfetti(page: Page, count: number) {
   removeAllChildren(layer);
   const colors = ['#ffd54f', '#ff8a80', '#80d8ff', '#b388ff'];
   const layoutSize = layer.getActualSize();
-  const width = layoutSize.width || layer.getMeasuredWidth() || 220;
-  const height = layoutSize.height || layer.getMeasuredHeight() || 260;
+  const pageSize = page.getActualSize();
+  const width = layoutSize.width || layer.getMeasuredWidth() || pageSize.width || page.getMeasuredWidth() || 220;
+  const height = layoutSize.height || layer.getMeasuredHeight() || pageSize.height || page.getMeasuredHeight() || 260;
   for (let i = 0; i < count; i++) {
     const piece = new Label();
     const pieceSize = 6 + Math.random() * 8;
