@@ -8,7 +8,7 @@ import { bestMove as searchBest } from '@ttt/engine';
 export const MoveInput = z.object({
   state: z.any() as z.ZodType<GameState>,
   config: z.any() as z.ZodType<VariantConfig>,
-  difficulty: z.enum(['chill', 'balanced', 'sharp', 'creative']) as z.ZodType<Difficulty>,
+  difficulty: z.enum(['chill', 'balanced', 'sharp']) as z.ZodType<Difficulty>,
 });
 
 export const MoveOutput = z.object({
@@ -32,12 +32,6 @@ export async function chooseMove(input: z.infer<typeof MoveInput>): Promise<z.in
 
   if (difficulty === 'chill') {
     // Slight randomness from neighborhood of best.
-    return MoveOutput.parse({ move: algo });
-  }
-
-  if (difficulty === 'creative') {
-    // Placeholder: return algorithmic pick for now.
-    // Later: top‑K candidates + LLM via Genkit to choose.
     return MoveOutput.parse({ move: algo });
   }
 

@@ -27,14 +27,14 @@ Architecture Overview
 
 - apps/mobile (NativeScript Core + TypeScript):
   - Cross‑device UI, animations, result screen, replay.
-  - Calls shared rules/AI for local play; calls Genkit AI service for advanced difficulty/creative style.
+  - Calls shared rules/AI for local play; calls Genkit AI service for advanced difficulty style.
 - packages/engine (TypeScript library):
   - Board model, variant system, rules, win detection.
   - Heuristic evaluator + alpha‑beta minimax (configurable depth).
   - Move generator supports Classic, Board Size, Gravity, Wrap; stubs for complex variants.
 - services/ai (Node + Genkit):
   - Exposes a `/move` endpoint and a Genkit Flow `chooseMove`.
-  - Hard: algorithmic search. Medium: heuristic search. Chaos/Creative: algorithm + LLM via Genkit.
+  - Hard: algorithmic search. Medium: heuristic search.
 - Data and Achievements:
   - Local persistence + optional cloud sync with `@nativescript/firebase` (Auth + Firestore).
   - Data model for profiles, achievements, and match history with replay.
@@ -149,7 +149,6 @@ Difficulty Modes
 - Chill: random among safe moves + shallow heuristic (no forks).
 - Balanced: heuristic + limited alpha‑beta search.
 - Sharp: deeper alpha‑beta or perfect play for 3x3.
-- Creative: engine proposes top‑K candidates; Genkit LLM chooses to add variety.
 
 ---
 

@@ -22,16 +22,26 @@
       <StackLayout class="screen" spacing="20">
         <StackLayout class="card game-info" padding="10" spacing="8" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
           <Label text="{{ statusText }}" class="status" textWrap="true" />
-          <Label text="{{ variantSummary }}" textWrap="true" />
-          <Label text="{{ difficultyLabel }}" textWrap="true" />
+          <Label textWrap="true">
+            <FormattedString>
+              <Span text="Difficulty: " fontWeight="bold" />
+              <Span text="{{ difficultyLabel }}" />
+            </FormattedString>
+          </Label>
+          <HtmlView html="{{ variantSummary }}" />
           <Label text="{{ hintText }}" class="meta" textWrap="true" />
         </StackLayout>
 
         <StackLayout class="card result-card" padding="10" spacing="12" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
           <Label text="{{ resultTitle }}" class="result-title" textWrap="true" />
           <Label text="{{ resultSummary }}" class="result-summary" textWrap="true" />
-          <Label text="{{ resultVariantSummary }}" class="result-summary" textWrap="true" />
-          <Label text="{{ resultDifficultyLabel }}" class="result-summary" textWrap="true" />
+          <Label textWrap="true">
+            <FormattedString>
+              <Span text="Difficulty: " fontWeight="bold" />
+              <Span text="{{ resultDifficultyLabel }}" />
+            </FormattedString>
+          </Label>
+          <HtmlView html="{{ resultVariantSummary }}" />
         </StackLayout>
 
         <FlexboxLayout class="board-shell" justifyContent="center">

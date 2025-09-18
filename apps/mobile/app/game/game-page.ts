@@ -226,7 +226,7 @@ function buildStatusText(game: GameState, busy: boolean): string {
     return 'AI is thinking...';
   }
   if (game.current === 'X') {
-    return 'Your turn. Tap a highlighted cell.';
+    return 'Your turn. You are X.';
   }
   return 'Waiting for opponent.';
 }
@@ -409,26 +409,26 @@ function buildResultSummary(game: GameState): string {
 }
 
 function formatVariantSummary(game: GameState): string {
+  let html = '<strong>Rules:</strong> ';
   const parts: string[] = [];
   if (game.config.gravity) {
-    parts.push('Gravity');
+    parts.push('⬇️ Gravity - Marks fall to the lowest empty cell.');
   }
   if (game.config.wrap) {
-    parts.push('Wrap');
+    parts.push('🔄 Wrap - Lines continue across opposite edges.');
   }
-  return parts.length ? parts.join(' | ') : 'Classic rules';
+  html += parts.length ? '<span>Variants</span>' + parts.map(part => `<br><span class='variant-chip'>${part}</span>`) : '<span>Classic</span>';
+  return html;
 }
 
 function formatDifficulty(value: GameSnapshot['settings']['difficulty']): string {
   switch (value) {
     case 'chill':
-      return 'Difficulty: Chill';
+      return '🤓 Chill';
     case 'sharp':
-      return 'Difficulty: Sharp';
-    case 'creative':
-      return 'Difficulty: Creative';
+      return '👿 Sharp';
     default:
-      return 'Difficulty: Balanced';
+      return '🤔 Balanced';
   }
 }
 
@@ -438,11 +438,7 @@ function formatResultDifficulty(value: GameSnapshot['settings']['difficulty']): 
       return 'Played on Chill difficulty';
     case 'sharp':
       return 'Played on Sharp difficulty';
-    case 'creative':
-      return 'Played on Creative difficulty';
     default:
       return 'Played on Balanced difficulty';
   }
 }
-
-

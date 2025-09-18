@@ -310,6 +310,29 @@ ListPicker {
   color: var(--color-ink);
 }
 
+.variant-chip {
+  background-color: #fff;
+  border-width: 1;
+  border-radius: 15;
+  border-color: var(--color-outline);
+  padding: 0 10;
+}
+
+.game-actions {
+  flex-direction: row;
+  justify-content: center;
+  gap: 16;
+}
+
+.game-actions Button {
+  min-width: 140;
+  padding: 12 16;
+  border-radius: 999;
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 16;
+  font-weight: 600;
+}
+
 /* Result */
 .result-title {
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
@@ -337,18 +360,6 @@ ListPicker {
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
   font-size: 16;
   font-weight: 600;
-}
-
-.result-actions Button:first-child {
-  background-color: var(--color-deep-blue);
-  color: white;
-}
-
-.result-actions Button:last-child {
-  border-width: 1;
-  border-color: var(--color-deep-blue);
-  color: var(--color-deep-blue);
-  background-color: transparent;
 }
 
 .difficulty-group .difficulty-chip {

@@ -1,6 +1,6 @@
 import { GameState, VariantConfig } from '@ttt/engine';
 
-export type Difficulty = 'chill' | 'balanced' | 'sharp' | 'creative';
+export type Difficulty = 'chill' | 'balanced' | 'sharp';
 
 export interface MoveResponse {
   move: { r: number; c: number };

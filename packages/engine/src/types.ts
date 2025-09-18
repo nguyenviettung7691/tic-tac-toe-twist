@@ -30,5 +30,5 @@ export interface GameState {
   lastMove?: Move;
 }
 
-export type Difficulty = 'chill' | 'balanced' | 'sharp' | 'creative';
+export type Difficulty = 'chill' | 'balanced' | 'sharp';
 
