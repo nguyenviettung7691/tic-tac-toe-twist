@@ -34,24 +34,27 @@
       </StackLayout>
 
       <FlexboxLayout class="board-shell" justifyContent="center">
-        <StackLayout class="{{ boardClass }}" orientation="vertical">
-          <Repeater items="{{ boardRows }}">
-            <Repeater.itemTemplate>
-              <FlexboxLayout class="board-row" flexDirection="row" justifyContent="center">
-                <Repeater items="{{ cells }}">
-                  <Repeater.itemsLayout>
-                    <FlexboxLayout flexDirection="row" />
-                  </Repeater.itemsLayout>
-                  <Repeater.itemTemplate>
-                    <Label text="{{ text }}"
-                           class="{{ cssClass }}"
-                           tap="onCellTap" />
-                  </Repeater.itemTemplate>
-                </Repeater>
-              </FlexboxLayout>
-            </Repeater.itemTemplate>
-          </Repeater>
-        </StackLayout>
+        <GridLayout rows="*" columns="*">
+          <StackLayout row="0" col="0" class="{{ boardClass }}" orientation="vertical">
+            <Repeater items="{{ boardRows }}">
+              <Repeater.itemTemplate>
+                <FlexboxLayout class="board-row" flexDirection="row" justifyContent="center">
+                  <Repeater items="{{ cells }}">
+                    <Repeater.itemsLayout>
+                      <FlexboxLayout flexDirection="row" />
+                    </Repeater.itemsLayout>
+                    <Repeater.itemTemplate>
+                      <Label text="{{ text }}"
+                             class="{{ cssClass }}"
+                             tap="onCellTap" />
+                    </Repeater.itemTemplate>
+                  </Repeater>
+                </FlexboxLayout>
+              </Repeater.itemTemplate>
+            </Repeater>
+          </StackLayout>
+          <AbsoluteLayout id="confettiLayer" row="0" col="0" class="confetti-layer" isHitTestVisible="false" visibility="{{ confettiVisible ? 'visible' : 'collapse' }}" horizontalAlignment="stretch" verticalAlignment="stretch" />
+        </GridLayout>
       </FlexboxLayout>
 
       <FlexboxLayout class="result-actions" flexDirection="row" justifyContent="center" alignItems="center" gap="16" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
@@ -66,3 +69,5 @@
     </StackLayout>
   </ScrollView>
 </Page>
+
+

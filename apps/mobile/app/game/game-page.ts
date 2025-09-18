@@ -1,4 +1,4 @@
-import { Frame, NavigatedData, Observable, Page } from '@nativescript/core';
+import { AbsoluteLayout, CoreTypes, Frame, Label, NavigatedData, Observable, Page } from '@nativescript/core';
 import type { GestureEventData } from '@nativescript/core';
 import { legalMoves } from '@ttt/engine';
 import type { Player } from '@ttt/engine';
@@ -21,9 +21,12 @@ interface BoardRowVM {
 
 let viewModel: Observable | null = null;
 let unsubscribe: (() => void) | null = null;
+let currentPage: Page | null = null;
+let confettiTimer: NodeJS.Timeout | null = null;
 
 export function onNavigatingTo(args: NavigatedData) {
   const page = args.object as Page;
+  currentPage = page;
   viewModel = viewModel ?? createViewModel();
   page.bindingContext = viewModel;
 
@@ -39,6 +42,8 @@ export function onNavigatingTo(args: NavigatedData) {
 export function onNavigatingFrom() {
   unsubscribe?.();
   unsubscribe = null;
+  clearConfetti(currentPage);
+  currentPage = null;
 }
 
 export function onCellTap(args: GestureEventData) {
@@ -81,6 +86,7 @@ function createViewModel() {
   vm.set('resultSummary', '');
   vm.set('resultVariantSummary', '');
   vm.set('resultDifficultyLabel', '');
+  vm.set('confettiVisible', false);
   return vm;
 }
 function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
@@ -98,6 +104,8 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultSummary', '');
     vm.set('resultVariantSummary', '');
     vm.set('resultDifficultyLabel', '');
+    vm.set('confettiVisible', false);
+    clearConfetti(currentPage);
     return;
   }
 
@@ -118,14 +126,22 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultSummary', buildResultSummary(game));
     vm.set('resultVariantSummary', formatVariantSummary(game));
     vm.set('resultDifficultyLabel', formatResultDifficulty(settings.difficulty));
+    const playerWon = game.winner === 'X';
+    vm.set('confettiVisible', playerWon);
+    if (playerWon) {
+      triggerConfetti(currentPage);
+    } else {
+      clearConfetti(currentPage);
+    }
   } else {
     vm.set('resultTitle', '');
     vm.set('resultSummary', '');
     vm.set('resultVariantSummary', '');
     vm.set('resultDifficultyLabel', '');
+    vm.set('confettiVisible', false);
+    clearConfetti(currentPage);
   }
 }
-
 
 function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<string>): BoardRowVM[] {
   const isHumanTurn = !busy && !game.winner && game.current === 'X';
@@ -287,6 +303,91 @@ function findWinningLine(game: GameState): { r: number; c: number }[] | null {
   return null;
 }
 
+function triggerConfetti(page: Page | null, count = 24) {
+  if (!page) {
+    return;
+  }
+  if (confettiTimer !== null) {
+    clearTimeout(confettiTimer);
+    confettiTimer = null;
+  }
+  confettiTimer = setTimeout(() => {
+    confettiTimer = null;
+    renderConfetti(page, count);
+  }, 80);
+}
+
+function renderConfetti(page: Page, count: number) {
+  const layer = page.getViewById<AbsoluteLayout>('confettiLayer');
+  if (!layer) {
+    return;
+  }
+  removeAllChildren(layer);
+  const colors = ['#ffd54f', '#ff8a80', '#80d8ff', '#b388ff'];
+  const layoutSize = layer.getActualSize();
+  const width = layoutSize.width || layer.getMeasuredWidth() || 220;
+  const height = layoutSize.height || layer.getMeasuredHeight() || 260;
+  for (let i = 0; i < count; i++) {
+    const piece = new Label();
+    const pieceSize = 6 + Math.random() * 8;
+    piece.className = 'confetti-piece';
+    piece.backgroundColor = colors[i % colors.length];
+    piece.width = pieceSize;
+    piece.height = pieceSize * 1.8;
+    piece.opacity = 0;
+    piece.rotate = Math.random() * 360;
+    const left = Math.random() * width;
+    AbsoluteLayout.setLeft(piece, left);
+    AbsoluteLayout.setTop(piece, 0);
+    layer.addChild(piece);
+    piece.translateY = -height / 2 - Math.random() * 80;
+    piece.translateX = 0;
+    const driftX = (Math.random() - 0.5) * (width / 2);
+    const fall = height + Math.random() * (height / 2);
+    const duration = 1200 + Math.random() * 800;
+    const delay = Math.random() * 200;
+    const endRotate = piece.rotate + (Math.random() > 0.5 ? 360 : -360);
+    piece.animate({
+      translate: { x: driftX, y: fall },
+      rotate: endRotate,
+      opacity: 1,
+      duration,
+      delay,
+      curve: CoreTypes.AnimationCurve.easeInOut,
+    }).then(() => piece.animate({
+      opacity: 0,
+      duration: 250,
+    })).then(() => {
+      if (piece.parent) {
+        (piece.parent as AbsoluteLayout).removeChild(piece);
+      }
+    }).catch(() => {
+      if (piece.parent) {
+        (piece.parent as AbsoluteLayout).removeChild(piece);
+      }
+    });
+  }
+}
+
+function clearConfetti(page: Page | null) {
+  if (confettiTimer !== null) {
+    clearTimeout(confettiTimer);
+    confettiTimer = null;
+  }
+  if (!page) {
+    return;
+  }
+  const layer = page.getViewById<AbsoluteLayout>('confettiLayer');
+  if (layer) {
+    removeAllChildren(layer);
+  }
+}
+
+function removeAllChildren(layout: AbsoluteLayout) {
+  while (layout.getChildrenCount() > 0) {
+    layout.removeChild(layout.getChildAt(0));
+  }
+}
 function buildResultTitle(game: GameState): string {
   if (game.winner === 'Draw') {
     return "It's a draw!";
@@ -342,4 +443,5 @@ function formatResultDifficulty(value: GameSnapshot['settings']['difficulty']): 
       return 'Played on Balanced difficulty';
   }
 }
+
 

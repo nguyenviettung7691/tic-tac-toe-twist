@@ -255,6 +255,17 @@ ActionBar {
   border-width: 3;
 }
 
+.confetti-layer {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.confetti-piece {
+  border-radius: 2;
+}
+
 .board-4 .cell {
   width: 68;
   height: 68;
