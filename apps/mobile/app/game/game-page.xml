@@ -82,8 +82,8 @@
           <Button text="🔁 Rematch" tap="onRematch" />
           <Button text="⏏️ Change variants" tap="onChangeVariants" />
         </FlexboxLayout>
-        <ScrollView class="replay-log" isScrollEnabled="true" height="150">
-          <StackLayout padding="10" spacing="8" visibility="{{ replayLogsVisible ? 'visible' : 'collapse' }}">
+        <ScrollView class="replay-log" isScrollEnabled="true" height="150" visibility="{{ replayLogsVisible ? 'visible' : 'collapse' }}">
+          <StackLayout padding="10" spacing="8">
             <Label text="Replay log" class="replay-log-title" />
             <Repeater items="{{ replayLogs }}">
               <Repeater.itemTemplate>
