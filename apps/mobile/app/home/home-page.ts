@@ -90,9 +90,9 @@ export function onWinLengthChanged(args: PropertyChangeData) {
 
 export function onHowToPlay() {
   Dialogs.alert({
-    title: 'How to play',
+    title: 'ℹ️ How to play',
     message:
-      'Line up the required number of marks before the AI does. Activate Gravity to let marks drop, Wrap edges to connect across the board, and switch up the difficulty to suit your mood.',
+      'Line up the required number of marks before the AI does. Enable as well as mix and match variants to add some twists. Switch up the difficulty to suit your mood.',
     okButtonText: 'Got it',
   });
 }

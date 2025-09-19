@@ -14,6 +14,7 @@
       </GridLayout>
     </ActionBar.titleView>
   </ActionBar>
+
   <ScrollView>
     <StackLayout class="sheet">
       <StackLayout class="section">
@@ -45,7 +46,7 @@
       </StackLayout>
 
       <StackLayout class="section">
-        <Label class="section-heading" text="Variants" />
+        <Label class="section-heading" text="Variants ℹ️" />
         <Repeater items="{{ variantOptions }}">
           <Repeater.itemTemplate>
             <GridLayout columns="*,auto" class="variant-row" tap="onToggleVariant">
