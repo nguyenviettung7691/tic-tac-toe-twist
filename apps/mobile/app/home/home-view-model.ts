@@ -4,7 +4,7 @@ import type { Difficulty } from '@ttt/engine';
 
 import { getSnapshot, type GameSetup } from '~/state/game-store';
 
-type VariantKey = 'gravity' | 'wrap';
+type VariantKey = 'gravity' | 'wrap' | 'randomBlocks';
 type BoardSegment = {
   size: 3 | 4 | 5;
   label: string;
@@ -69,6 +69,7 @@ export class HomeViewModel extends Observable {
     this.set('winLengthIndex', 0);
     this.set('gravity', setup.gravity);
     this.set('wrap', setup.wrap);
+    this.set('randomBlocks', setup.randomBlocks);
 
     this.refreshBoardOptions();
     this.refreshDifficultyOptions();
@@ -144,6 +145,13 @@ export class HomeViewModel extends Observable {
         icon: '🔄',
         active: !!this.get('wrap')
       },
+      {
+        key: 'randomBlocks',
+        title: 'Random blocks',
+        description: 'Random blocked cells at start.',
+        icon: '🧱',
+        active: !!this.get('randomBlocks')
+      },
     ];
     this.set('variantOptions', variants);
   }
@@ -158,6 +166,7 @@ export class HomeViewModel extends Observable {
       winLength,
       gravity: !!this.get('gravity'),
       wrap: !!this.get('wrap'),
+      randomBlocks: !!this.get('randomBlocks'),
       difficulty: difficultyMeta?.key ?? 'balanced',
       vsAi: true,
     };

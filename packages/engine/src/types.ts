@@ -14,7 +14,7 @@ export interface VariantConfig {
   notakto?: boolean;
   gravity?: boolean;
   wrap?: boolean;
-  randomBlocks?: number; // 0..3
+  randomBlocks?: number; // 0..N (random 1..N blocks when >0)
   doubleMove?: boolean;
   knightConstraint?: boolean;
   allowRowColShift?: boolean;

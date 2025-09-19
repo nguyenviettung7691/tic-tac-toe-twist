@@ -43,7 +43,8 @@ export function nextPlayer(p: Player): Player {
 export function initState(config: VariantConfig): GameState {
   const board = createBoard(config.boardSize);
   // Random blocks
-  const blocks = Math.min(config.randomBlocks ?? 0, Math.floor((config.boardSize ** 2) / 4));
+  const maxBlocks = Math.min(config.randomBlocks ?? 0, Math.floor((config.boardSize ** 2) / 4));
+  const blocks = maxBlocks > 1 ? Math.floor(Math.random() * maxBlocks) + 1 : maxBlocks;
   if (blocks > 0) {
     let placed = 0;
     while (placed < blocks) {

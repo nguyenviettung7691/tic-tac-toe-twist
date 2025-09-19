@@ -80,7 +80,7 @@
         <FlexboxLayout class="result-actions" flexDirection="row" justifyContent="center" alignItems="center" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
           <Button text="⏪ Replay" tap="onReplay" isEnabled="{{ !replayActive }}" />
           <Button text="🔁 Rematch" tap="onRematch" />
-          <Button text="⏏️ Change variants" tap="onChangeVariants" />
+          <Button text="⏏️ Game Setup" tap="onChangeGameSetup" />
         </FlexboxLayout>
         <ScrollView class="replay-log" isScrollEnabled="true" height="150" visibility="{{ replayLogsVisible ? 'visible' : 'collapse' }}">
           <StackLayout padding="10" spacing="8">
@@ -95,7 +95,7 @@
 
         <StackLayout class="game-actions" padding="10" spacing="12" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
           <Label text="Need a new twist?" horizontalAlignment="center" />
-          <Button text="⏏️ Change variants" class="cta-secondary" tap="onBack" />
+          <Button text="⏏️ Game Setup" class="cta-secondary" tap="onBack" />
         </StackLayout>
       </StackLayout>
     </ScrollView>

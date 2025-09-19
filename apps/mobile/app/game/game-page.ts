@@ -70,7 +70,7 @@ export function onRematch() {
   rematch();
 }
 
-export function onChangeVariants() {
+export function onChangeGameSetup() {
   stopReplay();
   const frame = Frame.topmost();
   frame.navigate({ moduleName: 'home/home-page', clearHistory: true });
@@ -206,7 +206,7 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
         text = cell;
         classes.push(cell === 'X' ? 'cell-player-x' : 'cell-player-o');
       } else if (cell === 'B') {
-        text = '#';
+        text = '🧱';
         classes.push('cell-blocked');
       }
 
@@ -571,6 +571,9 @@ function formatVariantSummary(game: GameState): string {
   }
   if (game.config.wrap) {
     parts.push('🔄 Wrap - Lines continue across opposite edges.');
+  }
+  if ((game.config.randomBlocks ?? 0) > 0) {
+    parts.push('🧱 Blocks - 1–3 cells start blocked.');
   }
   html += parts.length ? '<span>Variants</span>' + parts.map(part => `<br><span class='variant-chip'>${part}</span>`) : '<span>Classic</span>';
   return html;

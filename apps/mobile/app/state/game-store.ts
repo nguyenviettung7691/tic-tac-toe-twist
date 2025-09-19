@@ -8,6 +8,7 @@ export interface GameSetup {
   winLength: 3 | 4;
   gravity: boolean;
   wrap: boolean;
+  randomBlocks: boolean;
   difficulty: Difficulty;
   vsAi: boolean;
 }
@@ -26,6 +27,7 @@ const defaultSetup: GameSetup = {
   winLength: 3,
   gravity: false,
   wrap: false,
+  randomBlocks: false,
   difficulty: 'balanced',
   vsAi: true,
 };
@@ -135,6 +137,7 @@ function toVariantConfig(setup: GameSetup): VariantConfig {
     winLength,
     gravity: setup.gravity,
     wrap: setup.wrap,
+    randomBlocks: setup.randomBlocks ? 3 : 0,
   };
 }
 

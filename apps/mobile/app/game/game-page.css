@@ -1,3 +1,24 @@
+.screen {
+  padding: 20;
+  gap: 20;
+}
+
+.card {
+  background-color: var(--color-sheet);
+  border-radius: 20;
+  border-width: 1.5;
+  border-color: rgba(37, 123, 222, 0.35);
+  margin-bottom: 10;
+}
+
+.card.game-info {
+  background-color: #ffffff;
+}
+
+.card.result-card {
+  background-color: #ffffff;
+}
+
 .board-shell {
   padding: 20;
   border-radius: 28;
@@ -33,6 +54,12 @@
   border-width: 1;
   border-color: rgba(126, 207, 255, 0.2);
 }
+.cell-blocked {
+  background-color: rgba(40, 50, 70, 0.45);
+  border-color: rgba(31, 44, 63, 0.55);
+  color: rgba(230, 233, 240, 0.9);
+}
+
 
 .cell-winning {
   background-color: rgba(255, 223, 88, 0.55);
@@ -130,13 +157,12 @@
 .result-actions {
   flex-direction: row;
   justify-content: center;
-  gap: 16;
   margin-top: 10;
 }
 
 .result-actions Button {
   height: 40;
-  padding: 10;
+  padding: 5;
   border-radius: 999;
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
   font-size: 14;
