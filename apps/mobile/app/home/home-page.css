@@ -1,0 +1,169 @@
+.sheet {
+  margin: 15;
+  padding: 20;
+  border-radius: 28;
+  background-color: var(--color-sheet);
+  border-width: 1.5;
+  border-color: rgba(37, 123, 222, 0.35);
+  gap: 20;
+}
+
+.section {
+  margin-bottom: 10;
+}
+
+.section-heading {
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 20;
+  font-weight: 700;
+  color: var(--color-ink);
+  margin-bottom: 5;
+}
+
+.section-subtitle {
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 16;
+  font-weight: 600;
+  color: var(--color-ink);
+  margin-bottom: 4;
+}
+
+.segmented {
+  border-width: 1.5;
+  border-color: rgba(37, 123, 222, 0.35);
+  background-color: rgba(230, 241, 255, 0.35);
+  border-radius: 18;
+}
+
+.segmented-option {
+  flex: 1;
+  padding: 12;
+  gap: 2;
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 16;
+  color: var(--color-ink);
+  border-color: rgba(37, 123, 222, 0.35);
+  border-radius: 18;
+}
+
+.segmented-option .icon {
+  font-size: 24;
+}
+
+.segmented-option.active {
+  background-color: rgba(230, 241, 255, 0.8);
+  color: var(--color-deep-blue);
+  font-weight: 800;
+}
+
+.slider-label {
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 16;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.variant-row {
+  padding: 10;
+  margin-bottom: 10;
+  border-radius: 12;
+  border-width: 2;
+  border-color: var(--color-outline);
+  background-color: var(--color-background);
+}
+
+.variant-title {
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 16;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.variant-description,
+.difficulty-caption,
+.slider-label-detail {
+  font-family: 'Inter', 'Helvetica Neue', sans-serif;
+  font-size: 13;
+  color: rgba(31, 44, 63, 0.7);
+}
+
+.toggle-track {
+  width: 60;
+  height: 30;
+  border-radius: 20;
+  border-width: 1.5;
+  border-color: rgba(37, 123, 222, 0.35);
+  background-color: rgba(237, 241, 251, 0.75);
+  padding: 4 6;
+  justify-content: flex-start;
+}
+
+.toggle-track.active {
+  background-color: rgba(37, 123, 222, 0.2);
+  border-color: var(--color-deep-blue);
+}
+
+.toggle-knob {
+  width: 18;
+  height: 18;
+  border-radius: 9;
+  background-color: #b8c7ef;
+}
+
+.toggle-knob.active {
+  background-color: #257bde;
+}
+
+.difficulty-group {
+  border-width: 2;
+  border-color: var(--color-outline);
+  border-radius: 20;
+}
+
+.difficulty-chip {
+  flex: 1;
+  border-radius: 18;
+}
+
+.difficulty-chip.active {
+  background-color: #e6f1ff;
+}
+
+.difficulty-title {
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 16;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+
+.difficulty-caption {
+  margin-top: 2;
+  text-align: center;
+}
+
+.primary-cta {
+  margin-top: 8;
+  border-radius: 999;
+  background-color: var(--color-deep-blue);
+  color: white;
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 18;
+  font-weight: 700;
+}
+
+.secondary-link {
+  margin-top: 4;
+  text-align: center;
+  font-family: 'Inter', 'Helvetica Neue', sans-serif;
+  font-size: 14;
+  color: var(--color-deep-blue);
+  font-weight: 600;
+  text-decoration: underline;
+}
+
+.difficulty-group .difficulty-chip {
+  flex-grow: 1;
+  width: 0;
+  align-items: center;
+  justify-content: center;
+}
