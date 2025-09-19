@@ -77,13 +77,21 @@
           </StackLayout>
         </FlexboxLayout>
 
-        <Label class="replay-caption" text="{{ replayCaption }}" textWrap="true" visibility="{{ replayCaption ? 'visible' : 'collapse' }}" />
-
         <FlexboxLayout class="result-actions" flexDirection="row" justifyContent="center" alignItems="center" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
           <Button text="⏪ Replay" tap="onReplay" isEnabled="{{ !replayActive }}" />
           <Button text="🔁 Rematch" tap="onRematch" />
           <Button text="⏏️ Change variants" tap="onChangeVariants" />
         </FlexboxLayout>
+        <ScrollView class="replay-log" isScrollEnabled="true" height="150">
+          <StackLayout padding="10" spacing="8" visibility="{{ replayLogsVisible ? 'visible' : 'collapse' }}">
+            <Label text="Replay log" class="replay-log-title" />
+            <Repeater items="{{ replayLogs }}">
+              <Repeater.itemTemplate>
+                <Label text="{{ text }}" class="replay-log-entry" textWrap="true" />
+              </Repeater.itemTemplate>
+            </Repeater>
+          </StackLayout>
+        </ScrollView>
 
         <StackLayout class="game-actions" padding="10" spacing="12" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
           <Label text="Need a new twist?" horizontalAlignment="center" />

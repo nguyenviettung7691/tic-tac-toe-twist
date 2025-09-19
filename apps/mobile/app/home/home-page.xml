@@ -17,7 +17,7 @@
   <ScrollView>
     <StackLayout class="sheet">
       <StackLayout class="section">
-        <Label class="section-heading" text="Game Setup ⚙️" />
+        <Label class="section-heading" text="Game Setup" />
         <Label class="section-subtitle" text="Board size 🔲" />
         <FlexboxLayout class="segmented" justifyContent="center">
           <Repeater items="{{ boardOptions }}">
@@ -45,7 +45,7 @@
       </StackLayout>
 
       <StackLayout class="section">
-        <Label class="section-heading" text="Variants 🧪" />
+        <Label class="section-heading" text="Variants" />
         <Repeater items="{{ variantOptions }}">
           <Repeater.itemTemplate>
             <GridLayout columns="*,auto" class="variant-row" tap="onToggleVariant">
@@ -60,7 +60,7 @@
       </StackLayout>
 
       <StackLayout class="section">
-        <Label class="section-heading" text="Difficulty 🧠" />
+        <Label class="section-heading" text="Difficulty" />
         <FlexboxLayout class="difficulty-group" justifyContent="center">
           <Repeater items="{{ difficultyOptions }}">
             <Repeater.itemsLayout>

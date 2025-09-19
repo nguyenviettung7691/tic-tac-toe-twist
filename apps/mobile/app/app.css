@@ -359,6 +359,7 @@ ListPicker {
   flex-direction: row;
   justify-content: center;
   gap: 16;
+  margin-top: 10;
 }
 
 .result-actions Button {
@@ -367,6 +368,17 @@ ListPicker {
   border-radius: 999;
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
   font-size: 14;
+  font-weight: 600;
+}
+
+.replay-log {
+  margin-top: 10;
+  border-width: 1;
+  border-color: var(--color-outline);
+  border-radius: 12;
+  background-color: #fff;
+}
+.replay-log-title {
   font-weight: 600;
 }
 

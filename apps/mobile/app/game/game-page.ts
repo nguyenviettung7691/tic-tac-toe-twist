@@ -110,6 +110,8 @@ function createViewModel() {
   vm.set('replayTotal', 0);
   vm.set('winLengthLabel', '');
   vm.set('resultWinLengthLabel', '');
+  vm.set('replayLogs', [] as { text: string }[]);
+  vm.set('replayLogsVisible', false);
   return vm;
 }
 function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
@@ -135,6 +137,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('replayStep', 0);
     vm.set('replayTotal', 0);
     vm.set('winLengthLabel', '');
+    clearReplayLogs(vm);
     clearConfetti(currentPage);
     return;
   }
@@ -275,17 +278,18 @@ function startReplay(vm: Observable, game: GameState) {
   const winningSet = toWinningCellSet(game);
   stopReplay({ vm, game, winning: winningSet });
   const moves = game.moves;
+  clearReplayLogs(vm);
   if (!moves.length) {
     vm.set('replayActive', false);
     vm.set('replayStep', 0);
     vm.set('replayTotal', 0);
-    vm.set('replayCaption', 'No moves to replay.');
+    appendReplayLog(vm, 'No moves to replay.');
     return;
   }
   vm.set('replayActive', true);
   vm.set('replayStep', 0);
   vm.set('replayTotal', moves.length);
-  vm.set('replayCaption', 'Replay starting...');
+  appendReplayLog(vm, 'Replay starting...');
   runReplayStep(vm, game, winningSet, 0);
 }
 
@@ -298,8 +302,8 @@ function stopReplay(restore?: { vm: Observable; game?: GameState; winning?: Set<
   if (!target) {
     return;
   }
+  clearReplayLogs(target);
   target.set('replayActive', false);
-  target.set('replayCaption', '');
   target.set('replayStep', 0);
   target.set('replayTotal', restore?.game ? restore.game.moves.length : 0);
   if (restore?.game) {
@@ -340,16 +344,14 @@ function runReplayStep(vm: Observable, game: GameState, winningSet: Set<string> 
   vm.set('replayStep', limit);
   vm.set('replayTotal', moves.length);
 
-  if (limit === 0) {
-    vm.set('replayCaption', 'Replay starting...');
-  } else {
+  if (limit > 0) {
     const occupant: Player = (limit - 1) % 2 === 0 ? 'X' : 'O';
     const move = moves[limit - 1];
-    vm.set('replayCaption', `Move ${limit}/${moves.length}: ${occupant} -> (${move.r + 1}, ${move.c + 1})`);
+    appendReplayLog(vm, `Move ${limit}/${moves.length}: ${occupant} -> (${move.r + 1}, ${move.c + 1})`);
   }
 
   if (step >= moves.length) {
-    vm.set('replayCaption', 'Replay complete.');
+    appendReplayLog(vm, 'Replay complete.');
     vm.set('replayActive', false);
     replayTimer = null;
     return;
@@ -357,6 +359,20 @@ function runReplayStep(vm: Observable, game: GameState, winningSet: Set<string> 
 
   const delay = step === 0 ? 700 : 900;
   replayTimer = setTimeout(() => runReplayStep(vm, game, winningSet, step + 1), delay);
+}
+
+function appendReplayLog(vm: Observable, text: string) {
+  const existing = (vm.get('replayLogs') as { text: string }[] | undefined) ?? [];
+  const next = [...existing, { text }];
+  vm.set('replayLogs', next);
+  vm.set('replayLogsVisible', true);
+  vm.set('replayCaption', text);
+}
+
+function clearReplayLogs(vm: Observable) {
+  vm.set('replayLogs', [] as { text: string }[]);
+  vm.set('replayLogsVisible', false);
+  vm.set('replayCaption', '');
 }
 
 function toWinningCellSet(game: GameState): Set<string> | null {
@@ -526,13 +542,13 @@ function removeAllChildren(layout: AbsoluteLayout) {
 }
 function buildResultTitle(game: GameState): string {
   if (game.winner === 'Draw') {
-    return "It's a draw!";
+    return "It's a draw! 😥";
   }
   if (game.winner === 'X') {
-    return 'Victory!';
+    return 'Victory! 🥳';
   }
   if (game.winner === 'O') {
-    return 'Defeat this time';
+    return 'Defeat this time! 😞';
   }
   return 'Match complete';
 }
