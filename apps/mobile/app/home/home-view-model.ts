@@ -204,6 +204,6 @@ export class HomeViewModel extends Observable {
   }
 
   private updateWinLengthLabel(value: number) {
-    this.set('winLengthLabel', `${"❌".repeat(value)}`);
+    this.set('winLengthLabel', `${"❎".repeat(value)}`);
   }
 }
