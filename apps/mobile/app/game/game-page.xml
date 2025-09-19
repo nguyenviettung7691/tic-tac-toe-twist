@@ -28,6 +28,12 @@
               <Span text="{{ difficultyLabel }}" />
             </FormattedString>
           </Label>
+          <Label textWrap="true">
+            <FormattedString>
+              <Span text="Win condition: " fontWeight="bold" />
+              <Span text="{{ winLengthLabel }}" />
+            </FormattedString>
+          </Label>
           <HtmlView html="{{ variantSummary }}" />
           <Label text="{{ hintText }}" class="meta" textWrap="true" />
         </StackLayout>
@@ -39,6 +45,12 @@
             <FormattedString>
               <Span text="Difficulty: " fontWeight="bold" />
               <Span text="{{ resultDifficultyLabel }}" />
+            </FormattedString>
+          </Label>
+          <Label textWrap="true">
+            <FormattedString>
+              <Span text="Win condition: " fontWeight="bold" />
+              <Span text="{{ resultWinLengthLabel }}" />
             </FormattedString>
           </Label>
           <HtmlView html="{{ resultVariantSummary }}" />
@@ -67,15 +79,15 @@
 
         <Label class="replay-caption" text="{{ replayCaption }}" textWrap="true" visibility="{{ replayCaption ? 'visible' : 'collapse' }}" />
 
-        <FlexboxLayout class="result-actions" flexDirection="row" justifyContent="center" alignItems="center" gap="16" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
-          <Button text="Replay" tap="onReplay" isEnabled="{{ !replayActive }}" />
-          <Button text="Rematch" tap="onRematch" />
-          <Button text="Change variants" tap="onChangeVariants" />
+        <FlexboxLayout class="result-actions" flexDirection="row" justifyContent="center" alignItems="center" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
+          <Button text="⏪ Replay" tap="onReplay" isEnabled="{{ !replayActive }}" />
+          <Button text="🔁 Rematch" tap="onRematch" />
+          <Button text="⏏️ Change variants" tap="onChangeVariants" />
         </FlexboxLayout>
 
-        <StackLayout class="card game-actions" padding="10" spacing="12" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
-          <Label text="Need a new twist?" class="section-title" />
-          <Button text="Change variants" class="cta-secondary" tap="onBack" />
+        <StackLayout class="game-actions" padding="10" spacing="12" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
+          <Label text="Need a new twist?" horizontalAlignment="center" />
+          <Button text="⏏️ Change variants" class="cta-secondary" tap="onBack" />
         </StackLayout>
       </StackLayout>
     </ScrollView>

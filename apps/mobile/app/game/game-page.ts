@@ -108,6 +108,8 @@ function createViewModel() {
   vm.set('replayCaption', '');
   vm.set('replayStep', 0);
   vm.set('replayTotal', 0);
+  vm.set('winLengthLabel', '');
+  vm.set('resultWinLengthLabel', '');
   return vm;
 }
 function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
@@ -126,11 +128,13 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultSummary', '');
     vm.set('resultVariantSummary', '');
     vm.set('resultDifficultyLabel', '');
+    vm.set('resultWinLengthLabel', '');
     vm.set('confettiVisible', false);
     vm.set('replayActive', false);
     vm.set('replayCaption', '');
     vm.set('replayStep', 0);
     vm.set('replayTotal', 0);
+    vm.set('winLengthLabel', '');
     clearConfetti(currentPage);
     return;
   }
@@ -142,6 +146,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
   vm.set('statusText', buildStatusText(game, busy));
   vm.set('hintText', buildHintText(game, settings.gravity));
   vm.set('replayTotal', game.moves.length);
+  vm.set('winLengthLabel', formatWinLength(game));
   if (!vm.get('replayActive')) {
     vm.set('replayStep', 0);
     vm.set('replayCaption', '');
@@ -158,6 +163,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultSummary', buildResultSummary(game));
     vm.set('resultVariantSummary', formatVariantSummary(game));
     vm.set('resultDifficultyLabel', formatResultDifficulty(settings.difficulty));
+    vm.set('resultWinLengthLabel', formatWinLength(game));
     const playerWon = game.winner === 'X';
     vm.set('confettiVisible', playerWon);
     if (playerWon) {
@@ -171,6 +177,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultSummary', '');
     vm.set('resultVariantSummary', '');
     vm.set('resultDifficultyLabel', '');
+    vm.set('resultWinLengthLabel', '');
     vm.set('confettiVisible', false);
     clearConfetti(currentPage);
   }
@@ -534,6 +541,10 @@ function buildResultSummary(game: GameState): string {
   const moves = game.moves.length;
   const turns = moves === 1 ? '1 move' : moves + ' moves';
   return 'Finished after ' + turns + '.';
+}
+
+function formatWinLength(game: GameState): string {
+  return 'Connect ' + game.config.winLength + ' in a row';
 }
 
 function formatVariantSummary(game: GameState): string {

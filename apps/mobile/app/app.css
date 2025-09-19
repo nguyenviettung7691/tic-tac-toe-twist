@@ -362,11 +362,11 @@ ListPicker {
 }
 
 .result-actions Button {
-  min-width: 140;
-  padding: 12 16;
+  height: 40;
+  padding: 10;
   border-radius: 999;
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
-  font-size: 16;
+  font-size: 14;
   font-weight: 600;
 }
 
