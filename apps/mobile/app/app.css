@@ -278,6 +278,14 @@ ListPicker {
   border-radius: 2;
 }
 
+.replay-caption {
+  text-align: center;
+  margin: 8 0;
+  font-family: 'Inter', 'Helvetica Neue', sans-serif;
+  font-size: 14;
+  color: rgba(31, 44, 63, 0.7);
+}
+
 .board-4 .cell {
   width: 68;
   height: 68;

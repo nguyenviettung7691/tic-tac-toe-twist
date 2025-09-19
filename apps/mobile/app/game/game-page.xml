@@ -65,7 +65,10 @@
           </StackLayout>
         </FlexboxLayout>
 
+        <Label class="replay-caption" text="{{ replayCaption }}" textWrap="true" visibility="{{ replayCaption ? 'visible' : 'collapse' }}" />
+
         <FlexboxLayout class="result-actions" flexDirection="row" justifyContent="center" alignItems="center" gap="16" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
+          <Button text="Replay" tap="onReplay" isEnabled="{{ !replayActive }}" />
           <Button text="Rematch" tap="onRematch" />
           <Button text="Change variants" tap="onChangeVariants" />
         </FlexboxLayout>

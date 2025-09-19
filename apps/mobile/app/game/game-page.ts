@@ -22,7 +22,8 @@ interface BoardRowVM {
 let viewModel: Observable | null = null;
 let unsubscribe: (() => void) | null = null;
 let currentPage: Page | null = null;
-let confettiTimer: NodeJS.Timeout | null = null;
+let confettiTimer: ReturnType<typeof setTimeout> | null = null;
+let replayTimer: ReturnType<typeof setTimeout> | null = null;
 
 export function onNavigatingTo(args: NavigatedData) {
   const page = args.object as Page;
@@ -42,6 +43,7 @@ export function onNavigatingTo(args: NavigatedData) {
 export function onNavigatingFrom() {
   unsubscribe?.();
   unsubscribe = null;
+  stopReplay();
   clearConfetti(currentPage);
   currentPage = null;
 }
@@ -64,12 +66,27 @@ export function onBack() {
 }
 
 export function onRematch() {
+  stopReplay();
   rematch();
 }
 
 export function onChangeVariants() {
+  stopReplay();
   const frame = Frame.topmost();
   frame.navigate({ moduleName: 'home/home-page', clearHistory: true });
+}
+
+export function onReplay() {
+  if (!viewModel) {
+    return;
+  }
+  const snapshot = getSnapshot();
+  const game = snapshot.game;
+  if (!game || !game.winner) {
+    stopReplay();
+    return;
+  }
+  startReplay(viewModel, game);
 }
 
 function createViewModel() {
@@ -87,6 +104,10 @@ function createViewModel() {
   vm.set('resultVariantSummary', '');
   vm.set('resultDifficultyLabel', '');
   vm.set('confettiVisible', false);
+  vm.set('replayActive', false);
+  vm.set('replayCaption', '');
+  vm.set('replayStep', 0);
+  vm.set('replayTotal', 0);
   return vm;
 }
 function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
@@ -94,6 +115,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
   vm.set('busy', busy);
 
   if (!game) {
+    stopReplay();
     vm.set('boardRows', []);
     vm.set('variantSummary', '');
     vm.set('difficultyLabel', '');
@@ -105,15 +127,25 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultVariantSummary', '');
     vm.set('resultDifficultyLabel', '');
     vm.set('confettiVisible', false);
+    vm.set('replayActive', false);
+    vm.set('replayCaption', '');
+    vm.set('replayStep', 0);
+    vm.set('replayTotal', 0);
     clearConfetti(currentPage);
     return;
   }
+
 
   vm.set('boardClass', `board board-${game.board.length}`);
   vm.set('variantSummary', formatVariantSummary(game));
   vm.set('difficultyLabel', formatDifficulty(settings.difficulty));
   vm.set('statusText', buildStatusText(game, busy));
   vm.set('hintText', buildHintText(game, settings.gravity));
+  vm.set('replayTotal', game.moves.length);
+  if (!vm.get('replayActive')) {
+    vm.set('replayStep', 0);
+    vm.set('replayCaption', '');
+  }
 
   const winningLine = game.winner && game.winner !== 'Draw' ? findWinningLine(game) : null;
   const winningCells = winningLine ? new Set(winningLine.map(({ r, c }) => `${r}:${c}`)) : undefined;
@@ -134,6 +166,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
       clearConfetti(currentPage);
     }
   } else {
+    stopReplay();
     vm.set('resultTitle', '');
     vm.set('resultSummary', '');
     vm.set('resultVariantSummary', '');
@@ -231,6 +264,101 @@ function buildStatusText(game: GameState, busy: boolean): string {
   return 'Waiting for opponent.';
 }
 
+function startReplay(vm: Observable, game: GameState) {
+  const winningSet = toWinningCellSet(game);
+  stopReplay({ vm, game, winning: winningSet });
+  const moves = game.moves;
+  if (!moves.length) {
+    vm.set('replayActive', false);
+    vm.set('replayStep', 0);
+    vm.set('replayTotal', 0);
+    vm.set('replayCaption', 'No moves to replay.');
+    return;
+  }
+  vm.set('replayActive', true);
+  vm.set('replayStep', 0);
+  vm.set('replayTotal', moves.length);
+  vm.set('replayCaption', 'Replay starting...');
+  runReplayStep(vm, game, winningSet, 0);
+}
+
+function stopReplay(restore?: { vm: Observable; game?: GameState; winning?: Set<string> | null }) {
+  if (replayTimer !== null) {
+    clearTimeout(replayTimer);
+    replayTimer = null;
+  }
+  const target = restore?.vm ?? viewModel;
+  if (!target) {
+    return;
+  }
+  target.set('replayActive', false);
+  target.set('replayCaption', '');
+  target.set('replayStep', 0);
+  target.set('replayTotal', restore?.game ? restore.game.moves.length : 0);
+  if (restore?.game) {
+    target.set('boardRows', buildBoardRows(restore.game, false, restore.winning ?? undefined));
+  }
+}
+
+function runReplayStep(vm: Observable, game: GameState, winningSet: Set<string> | null, step: number) {
+  if (!currentPage) {
+    stopReplay();
+    return;
+  }
+  const moves = game.moves;
+  const boardSize = game.board.length;
+  const board: Array<Array<Player | 'B' | null>> = Array.from({ length: boardSize }, (_, r) =>
+    Array.from({ length: boardSize }, (_, c) => (game.board[r][c] === 'B' ? 'B' : null))
+  );
+
+  const limit = Math.min(step, moves.length);
+  for (let i = 0; i < limit; i++) {
+    const move = moves[i];
+    const player: Player = i % 2 === 0 ? 'X' : 'O';
+    board[move.r][move.c] = player;
+  }
+
+  const lastMove = limit > 0 ? moves[limit - 1] : undefined;
+  const displayGame: GameState = {
+    ...game,
+    board,
+    moves: moves.slice(0, limit),
+    lastMove,
+    current: limit % 2 === 0 ? 'X' : 'O',
+    winner: limit === moves.length ? game.winner : null,
+  };
+
+  const highlight = displayGame.winner ? winningSet ?? undefined : undefined;
+  vm.set('boardRows', buildBoardRows(displayGame, true, highlight));
+  vm.set('replayStep', limit);
+  vm.set('replayTotal', moves.length);
+
+  if (limit === 0) {
+    vm.set('replayCaption', 'Replay starting...');
+  } else {
+    const occupant: Player = (limit - 1) % 2 === 0 ? 'X' : 'O';
+    const move = moves[limit - 1];
+    vm.set('replayCaption', `Move ${limit}/${moves.length}: ${occupant} -> (${move.r + 1}, ${move.c + 1})`);
+  }
+
+  if (step >= moves.length) {
+    vm.set('replayCaption', 'Replay complete.');
+    vm.set('replayActive', false);
+    replayTimer = null;
+    return;
+  }
+
+  const delay = step === 0 ? 700 : 900;
+  replayTimer = setTimeout(() => runReplayStep(vm, game, winningSet, step + 1), delay);
+}
+
+function toWinningCellSet(game: GameState): Set<string> | null {
+  const winningLine = findWinningLine(game);
+  if (!winningLine) {
+    return null;
+  }
+  return new Set(winningLine.map(({ r, c }) => `${r}:${c}`));
+}
 function findWinningLine(game: GameState): { r: number; c: number }[] | null {
   if (!game.winner || game.winner === 'Draw') {
     return null;
