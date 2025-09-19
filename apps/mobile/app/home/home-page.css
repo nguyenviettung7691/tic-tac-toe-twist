@@ -1,6 +1,6 @@
 .sheet {
   margin: 15;
-  padding: 20;
+  padding: 10 20;
   border-radius: 28;
   background-color: var(--color-sheet);
   border-width: 1.5;
@@ -37,7 +37,7 @@
 
 .segmented-option {
   flex: 1;
-  padding: 12;
+  padding: 5 12;
   gap: 2;
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
   font-size: 16;
@@ -49,29 +49,33 @@
 .segmented-option .icon {
   font-size: 24;
 }
-
 .segmented-option.active {
   background-color: rgba(230, 241, 255, 0.8);
   color: var(--color-deep-blue);
   font-weight: 800;
 }
 
+.slider {
+  margin-top: 5;
+}
 .slider-label {
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
   font-size: 16;
   font-weight: 600;
   color: var(--color-ink);
 }
+.meta {
+  margin-bottom: -3;
+}
 
 .variant-row {
-  padding: 10;
-  margin-bottom: 10;
+  padding: 0 10;
+  margin-bottom: 5;
   border-radius: 12;
-  border-width: 2;
+  border-width: 1;
   border-color: var(--color-outline);
   background-color: var(--color-background);
 }
-
 .variant-title {
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
   font-size: 16;

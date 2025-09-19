@@ -42,7 +42,7 @@
           <Label class="meta" text="Options limited by board size." textWrap="true" />
           <Label class="meta" text="Slide up or down to select." textWrap="true" />
         </StackLayout>
-        <ListPicker items="{{ winLengthArray }}" selectedIndex="{{ winLengthIndex }}" selectedIndexChange="onWinLengthChanged" />
+        <ListPicker class="slider" items="{{ winLengthArray }}" selectedIndex="{{ winLengthIndex }}" selectedIndexChange="onWinLengthChanged" />
       </StackLayout>
 
       <StackLayout class="section">
