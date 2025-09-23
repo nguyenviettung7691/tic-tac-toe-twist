@@ -97,6 +97,8 @@ function createViewModel() {
   vm.set('boardRows', [] as BoardRowVM[]);
   vm.set('boardClass', 'board board-3');
   vm.set('busy', false);
+  vm.set('aiThinkingVisible', false);
+  vm.set('aiThinkingMessage', '');
   vm.set('hintText', '');
   vm.set('resultVisible', false);
   vm.set('resultTitle', '');
@@ -117,6 +119,9 @@ function createViewModel() {
 function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
   const { game, busy, settings } = snapshot;
   vm.set('busy', busy);
+  const aiThinking = busy && settings.vsAi;
+  vm.set('aiThinkingVisible', aiThinking);
+  vm.set('aiThinkingMessage', aiThinking ? 'AI is thinking...' : '');
 
   if (!game) {
     stopReplay();

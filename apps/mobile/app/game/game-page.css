@@ -19,6 +19,21 @@
   background-color: #ffffff;
 }
 
+.turn-banner {
+  padding: 10;
+  margin-bottom: 10;
+  border-radius: 16;
+  background-color: rgba(37, 123, 222, 0.12);
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+.thinking-spinner {
+  margin-right: 8;
+  color: var(--color-deep-blue);
+}
+
 .board-shell {
   padding: 20;
   border-radius: 28;

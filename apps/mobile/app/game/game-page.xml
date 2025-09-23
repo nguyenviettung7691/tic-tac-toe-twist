@@ -21,7 +21,11 @@
     <ScrollView row="0" col="0">
       <StackLayout class="screen" spacing="20">
         <StackLayout class="card game-info" padding="10" spacing="8" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
-          <Label text="{{ statusText }}" class="status" textWrap="true" />
+          <FlexboxLayout class="turn-banner" flexDirection="row" alignItems="center" justifyContent="center">
+            <ActivityIndicator class="thinking-spinner" busy="{{ aiThinkingVisible }}" visibility="{{ aiThinkingVisible ? 'visible' : 'collapse' }}" />
+            <Label class="status" text="{{ aiThinkingMessage }}" visibility="{{ aiThinkingVisible ? 'visible' : 'collapse' }}" />
+            <Label text="{{ statusText }}" class="status" textWrap="true" visibility="{{ aiThinkingVisible ? 'collapse' : 'visible' }}" />
+          </FlexboxLayout>
           <Label textWrap="true">
             <FormattedString>
               <Span text="Difficulty: " fontWeight="bold" />
@@ -35,7 +39,7 @@
             </FormattedString>
           </Label>
           <HtmlView html="{{ variantSummary }}" />
-          <Label text="{{ hintText }}" class="meta" textWrap="true" />
+          <Label text="{{ hintText }}" class="meta" textWrap="true" visibility="{{ hintText ? 'visible' : 'collapse' }}" />
         </StackLayout>
 
         <StackLayout class="card result-card" padding="10" spacing="12" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">

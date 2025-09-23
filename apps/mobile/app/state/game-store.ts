@@ -36,8 +36,10 @@ let currentSetup: GameSetup = { ...defaultSetup };
 let currentGame: GameState | null = null;
 let lastFinishedGame: GameState | null = null;
 let busy = false;
+let aiThinkTimer: ReturnType<typeof setTimeout> | null = null;
 
 const listeners = new Set<Listener>();
+const ALLOWED_BOARD_SIZES: GameSetup['boardSize'][] = [3, 4, 5, 6];
 
 export function getSnapshot(): GameSnapshot {
   return {
@@ -57,9 +59,14 @@ export function subscribe(listener: Listener): () => void {
 }
 
 export function startNewGame(setup: GameSetup): GameState {
-  currentSetup = { ...setup };
+  if (aiThinkTimer !== null) {
+    clearTimeout(aiThinkTimer);
+    aiThinkTimer = null;
+  }
+  const normalized = normalizeSetup(setup);
+  currentSetup = { ...normalized };
   busy = false;
-  currentGame = withWinner(createGame(toVariantConfig(currentSetup)));
+  currentGame = withWinner(createGame(toVariantConfig(normalized)));
   lastFinishedGame = null;
   notifyListeners();
   return currentGame;
@@ -82,10 +89,8 @@ export function playerMove(move: Move): GameState | null {
   applyMoveAndUpdate(move);
 
   if (currentSetup.vsAi && currentGame && !currentGame.winner) {
-    const aiMove = bestMove(currentGame, currentGame.current);
-    if (aiMove) {
-      applyMoveAndUpdate(aiMove);
-    }
+    scheduleAiMove();
+    return currentGame;
   }
 
   busy = false;
@@ -99,11 +104,54 @@ export function getLastResult(): GameState | null {
 }
 
 export function reset(): void {
+  if (aiThinkTimer !== null) {
+    clearTimeout(aiThinkTimer);
+    aiThinkTimer = null;
+  }
   currentSetup = { ...defaultSetup };
   currentGame = null;
   lastFinishedGame = null;
   busy = false;
   notifyListeners();
+}
+
+
+function normalizeSetup(setup: GameSetup): GameSetup {
+  const boardSize = ALLOWED_BOARD_SIZES.includes(setup.boardSize) ? setup.boardSize : defaultSetup.boardSize;
+  const maxWin = boardSize === 3 ? 3 : 4;
+  const winLength = Math.min(Math.max(setup.winLength, 3), maxWin) as 3 | 4;
+  return {
+    ...setup,
+    boardSize,
+    winLength,
+  };
+}
+
+
+function scheduleAiMove() {
+  if (aiThinkTimer !== null) {
+    clearTimeout(aiThinkTimer);
+    aiThinkTimer = null;
+  }
+
+  aiThinkTimer = setTimeout(() => {
+    aiThinkTimer = null;
+    if (!currentGame || currentGame.winner) {
+      busy = false;
+      notifyListeners();
+      return;
+    }
+
+    try {
+      const aiMove = bestMove(currentGame, currentGame.current);
+      if (aiMove) {
+        applyMoveAndUpdate(aiMove);
+      }
+    } finally {
+      busy = false;
+      notifyListeners();
+    }
+  }, 0);
 }
 
 function notifyListeners() {
