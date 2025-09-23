@@ -11,12 +11,10 @@ export interface VariantConfig {
   boardSize: 3 | 4 | 5 | 6;
   winLength: 3 | 4;
   misere?: boolean;
-  notakto?: boolean;
   gravity?: boolean;
   wrap?: boolean;
   randomBlocks?: number; // 0..N (random 1..N blocks when >0)
   doubleMove?: boolean;
-  knightConstraint?: boolean;
   allowRowColShift?: boolean;
   allowBomb?: boolean;
 }

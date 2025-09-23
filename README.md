@@ -4,22 +4,25 @@ An extendable, single‑player tic‑tac‑toe with twists. Cross‑device UI vi
 
 ---
 
-Brainstorm: Fun Variants and New Rules
+Board Size: 3x3 (classic), 4x4, 5x5, 6x6. Win length configurable.
 
-- Board Size: 3x3 (classic), 4x4, 5x5, 6x6. Win length configurable (3 or 4).
-- Gravity: Pieces fall to the lowest empty cell in the chosen column.
-- Wrap (Torus): Lines can wrap across edges (e.g., right edge continues at left).
-- Misere: You lose if you make a required win length row.
-- Notakto: Both players place X. Creating a line loses. Optionally play on multiple small boards.
+Combine Fun Variants: Players can enable multiple compatible toggles at game start; conflicts are flagged.
+Variants can be a Rule or a One-Time-Power:
+
+Rules are applied throughout the game:
+
+- Gravity: Pieces fall to the lowest empty cell in the chosen column. (Connect Four style)
+- Wrap: Lines can wrap across edges (e.g., right edge continues at left).
+- Misere: You lose if you make a required win length row. (try not to win!)
 - Random Blocks: 1–3 cells blocked at start; cannot play there.
-- Double Move: Take two placements on your turn; cannot complete two distinct lines in one turn.
-- Row/Col Shift: Once per game, shift a selected row or column by one cell cyclically.
-- Power: One‑time “bomb” removes a single opponent piece; cannot be used to immediately win.
-- Knight Constraint: Must play a knight’s move away from the opponent’s last move.
-- Fog of War: Non‑adjacent cells are hidden until scanned (costs your move).
-- Chaos Mode: Each round randomly selects from a curated set of twists.
 
-Combine variants: Players can enable multiple compatible toggles at game start; conflicts are flagged (e.g., Notakto + Misere).
+Players can trade their turn for a One-Time-Power:
+
+- Double Move: On the same turn, place 2 marks that are not in 1 cell space next to each other.
+- Lane Shift: Shift a selected row or column by one cell cyclically.
+- Bomb: Removes a single opponent mark.
+
+Chaos Mode: Each round randomly selects a random number of variants.
 
 ---
 

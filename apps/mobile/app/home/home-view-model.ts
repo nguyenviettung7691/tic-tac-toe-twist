@@ -145,7 +145,7 @@ export class HomeViewModel extends Observable {
       },
       {
         key: 'wrap',
-        title: 'Wrap edges',
+        title: 'Wrap',
         description: 'Lines continue across opposite edges.',
         icon: '🔄',
         active: !!this.get('wrap')

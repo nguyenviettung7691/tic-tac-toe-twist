@@ -62,8 +62,8 @@ export function initState(config: VariantConfig): GameState {
 export function legalMoves(state: GameState): Move[] {
   // For now, support placements on empty cells only. Powers/constraints are TODO.
   const base = emptyCells(state.board).filter((m) => state.board[m.r][m.c] === null);
-  if (!state.config.knightConstraint || !state.lastMove) return base;
-  // Knight constraint relative to opponent's last move
+  if (!state.lastMove) return base;
+  // Relative to opponent's last move
   const { r: lr, c: lc } = state.lastMove;
   const deltas = [
     [2, 1], [2, -1], [-2, 1], [-2, -1],
