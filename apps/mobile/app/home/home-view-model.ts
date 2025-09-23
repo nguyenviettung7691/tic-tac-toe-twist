@@ -4,7 +4,7 @@ import type { Difficulty } from '@ttt/engine';
 
 import { getSnapshot, type GameSetup } from '~/state/game-store';
 
-type VariantKey = 'gravity' | 'wrap' | 'randomBlocks';
+type VariantKey = 'gravity' | 'wrap' | 'randomBlocks' | 'misere';
 type BoardSegment = {
   size: 3 | 4 | 5 | 6;
   label: string;
@@ -69,6 +69,7 @@ export class HomeViewModel extends Observable {
     this.set('gravity', setup.gravity);
     this.set('wrap', setup.wrap);
     this.set('randomBlocks', setup.randomBlocks);
+    this.set('misere', setup.misere);
 
     this.refreshBoardOptions();
     this.refreshDifficultyOptions();
@@ -144,6 +145,13 @@ export class HomeViewModel extends Observable {
         active: !!this.get('wrap')
       },
       {
+        key: 'misere',
+        title: 'Misere',
+        description: 'Complete a winning line and you lose.',
+        icon: '🎭',
+        active: !!this.get('misere')
+      },
+      {
         key: 'randomBlocks',
         title: 'Random blocks',
         description: 'Random blocked cells at start.',
@@ -164,6 +172,7 @@ export class HomeViewModel extends Observable {
       winLength,
       gravity: !!this.get('gravity'),
       wrap: !!this.get('wrap'),
+      misere: !!this.get('misere'),
       randomBlocks: !!this.get('randomBlocks'),
       difficulty: difficultyMeta?.key ?? 'balanced',
       vsAi: true,

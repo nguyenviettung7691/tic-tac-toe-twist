@@ -245,21 +245,26 @@ function buildHintText(game: GameState, gravityEnabled: boolean): string {
   if (game.winner) {
     return '';
   }
+  const hints: string[] = [];
+  if (game.config.misere) {
+    hints.push('Misere twist: completing the win line hands victory to your opponent.');
+  }
   if (game.moves.length <= 1) {
     if (gravityEnabled && game.config.gravity) {
-      return 'Tip: gravity drops marks down! Aim above the open spot.';
+      hints.push('Tip: gravity drops marks down! Aim above the open spot.');
+    } else if (game.config.wrap) {
+      hints.push('Tip: wrap connects opposite edges. Use corners to loop lines.');
+    } else {
+      hints.push('Tip: tap a highlighted cell to place your mark.');
     }
-    if (game.config.wrap) {
-      return 'Tip: wrap connects opposite edges—use corners to loop lines.';
-    }
-    return 'Tip: tap a highlighted cell to place your mark.';
+  } else if (game.config.wrap) {
+    hints.push('Wrap is on: watch for lines that loop across edges.');
   }
-  if (game.config.wrap) {
-    return 'Wrap is on: watch for lines that loop across edges.';
+  if (!hints.length) {
+    return '';
   }
-  return '';
+  return hints.join(' ');
 }
-
 function buildStatusText(game: GameState, busy: boolean): string {
   if (game.winner === 'Draw') {
     return "It's a draw!";
@@ -577,8 +582,11 @@ function formatVariantSummary(game: GameState): string {
   if (game.config.wrap) {
     parts.push('🔄 Wrap - Lines continue across opposite edges.');
   }
+  if (game.config.misere) {
+    parts.push('🎭 Misere - completing the win line makes you lose.');
+  }
   if ((game.config.randomBlocks ?? 0) > 0) {
-    parts.push('🧱 Blocks - 1–3 cells start blocked.');
+    parts.push('🧱 Blocks - 1-3 cells start blocked.');
   }
   html += parts.length ? '<span>Variants</span>' + parts.map(part => `<br><span class='variant-chip'>${part}</span>`) : '<span>Classic</span>';
   return html;

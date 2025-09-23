@@ -19,7 +19,7 @@ export function validateConfig(config: VariantConfig): { ok: true } | { ok: fals
     return { ok: false, reason: 'winLength cannot exceed boardSize' };
   }
   if (config.notakto && config.misere) {
-    return { ok: false, reason: 'Notakto conflicts with Misère' };
+    return { ok: false, reason: 'Notakto conflicts with Misere' };
   }
   if (config.knightConstraint && config.boardSize < 4) {
     return { ok: false, reason: 'Knight constraint is too restrictive on < 4x4' };

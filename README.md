@@ -9,7 +9,7 @@ Brainstorm: Fun Variants and New Rules
 - Board Size: 3x3 (classic), 4x4, 5x5, 6x6. Win length configurable (3 or 4).
 - Gravity: Pieces fall to the lowest empty cell in the chosen column.
 - Wrap (Torus): Lines can wrap across edges (e.g., right edge continues at left).
-- Misère: You lose if you make a 3‑in‑a‑row (or required win length).
+- Misere: You lose if you make a required win length row.
 - Notakto: Both players place X. Creating a line loses. Optionally play on multiple small boards.
 - Random Blocks: 1–3 cells blocked at start; cannot play there.
 - Double Move: Take two placements on your turn; cannot complete two distinct lines in one turn.
@@ -19,7 +19,7 @@ Brainstorm: Fun Variants and New Rules
 - Fog of War: Non‑adjacent cells are hidden until scanned (costs your move).
 - Chaos Mode: Each round randomly selects from a curated set of twists.
 
-Combine variants: Players can enable multiple compatible toggles at game start; conflicts are flagged (e.g., Notakto + Misère).
+Combine variants: Players can enable multiple compatible toggles at game start; conflicts are flagged (e.g., Notakto + Misere).
 
 ---
 
@@ -172,7 +172,7 @@ Player Data & Achievements
 
 Sample Achievements
 
-- First Win, Flawless (no mistakes), Fork Master, Center Skeptic (win without center), Streak 3/5/10, Variant Explorer (play 5 variants), Gravity Guru, Misère Mindset, Chaos Wrangler.
+- First Win, Flawless (no mistakes), Fork Master, Center Skeptic (win without center), Streak 3/5/10, Variant Explorer (play 5 variants), Gravity Guru, Misere Mindset, Chaos Wrangler.
 
 ---
 

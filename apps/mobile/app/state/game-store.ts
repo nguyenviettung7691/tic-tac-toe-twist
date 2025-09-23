@@ -9,6 +9,7 @@ export interface GameSetup {
   gravity: boolean;
   wrap: boolean;
   randomBlocks: boolean;
+  misere: boolean;
   difficulty: Difficulty;
   vsAi: boolean;
 }
@@ -28,6 +29,7 @@ const defaultSetup: GameSetup = {
   gravity: false,
   wrap: false,
   randomBlocks: false,
+  misere: false,
   difficulty: 'balanced',
   vsAi: true,
 };
@@ -120,10 +122,12 @@ function normalizeSetup(setup: GameSetup): GameSetup {
   const boardSize = ALLOWED_BOARD_SIZES.includes(setup.boardSize) ? setup.boardSize : defaultSetup.boardSize;
   const maxWin = boardSize === 3 ? 3 : 4;
   const winLength = Math.min(Math.max(setup.winLength, 3), maxWin) as 3 | 4;
+  const misere = !!setup.misere;
   return {
     ...setup,
     boardSize,
     winLength,
+    misere,
   };
 }
 
@@ -151,7 +155,7 @@ function scheduleAiMove() {
       busy = false;
       notifyListeners();
     }
-  }, 0);
+  }, 16);
 }
 
 function notifyListeners() {
@@ -185,6 +189,7 @@ function toVariantConfig(setup: GameSetup): VariantConfig {
     winLength,
     gravity: setup.gravity,
     wrap: setup.wrap,
+    misere: setup.misere,
     randomBlocks: setup.randomBlocks ? 3 : 0,
   };
 }
