@@ -53,6 +53,7 @@
 
       <StackLayout class="section">
         <Label class="section-heading" text="Variants ❓" tap="onVariantsInfo" />
+        <Label class="section-subtitle" text="Rules ❓" tap="onRulesInfo" />
         <Repeater items="{{ variantOptions }}">
           <Repeater.itemTemplate>
             <GridLayout columns="*,auto" class="variant-row" tap="onToggleVariant">

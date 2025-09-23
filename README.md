@@ -4,7 +4,7 @@ An extendable, single‑player tic‑tac‑toe with twists. Cross‑device UI vi
 
 ---
 
-Board Size: 3x3 (classic), 4x4, 5x5, 6x6. Win length configurable.
+Board Size: 3x3 (classic), 4x4, 5x5, 6x6. Win length configurable based on board size.
 
 Combine Fun Variants: Players can enable multiple compatible toggles at game start; conflicts are flagged.
 Variants can be a Rule or a One-Time-Power:
@@ -16,7 +16,7 @@ Rules are applied throughout the game:
 - Misere: You lose if you make a required win length row. (try not to win!)
 - Random Blocks: 1–3 cells blocked at start; cannot play there.
 
-Players can trade their turn for a One-Time-Power:
+Players can perform a One-Time-Power instead of placing a mark (unless OTP stated otherwise):
 
 - Double Move: On the same turn, place 2 marks that are not in 1 cell space next to each other.
 - Lane Shift: Shift a selected row or column by one cell cyclically.

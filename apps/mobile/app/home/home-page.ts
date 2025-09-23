@@ -33,6 +33,14 @@ export function onWinLengthInfo() {
 export function onVariantsInfo() {
   Dialogs.alert({
     title: 'Variants',
+    message: 'Players can enable multiple compatible toggles at game start; conflicts are flagged.\nVariants can be a Rule or a One-Time-Power.\nRules are applied throughout the game.\nPlayers can trade their turn for a One-Time-Power.',
+    okButtonText: 'Close',
+  });
+}
+
+export function onRulesInfo() {
+  Dialogs.alert({
+    title: 'Rules',
     message: 'Gravity - marks fall to the lowest empty cell.\nWrap - lines connect across opposite edges.\nMisere - completing the win line hands victory to your opponent.\nRandom blocks - 1-3 cells start blocked.\n\nAnimated guides coming soon for each variant.',
     okButtonText: 'Close',
   });
