@@ -4,7 +4,7 @@ import type { Difficulty, GameState, Move, VariantConfig } from '@ttt/engine';
 export type { GameState, Move } from '@ttt/engine';
 
 export interface GameSetup {
-  boardSize: 3 | 4 | 5;
+  boardSize: 3 | 4 | 5 | 6;
   winLength: 3 | 4;
   gravity: boolean;
   wrap: boolean;

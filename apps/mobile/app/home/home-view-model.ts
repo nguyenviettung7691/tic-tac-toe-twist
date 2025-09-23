@@ -6,15 +6,15 @@ import { getSnapshot, type GameSetup } from '~/state/game-store';
 
 type VariantKey = 'gravity' | 'wrap' | 'randomBlocks';
 type BoardSegment = {
-  size: 3 | 4 | 5;
+  size: 3 | 4 | 5 | 6;
   label: string;
-  icon: string;
 };
 
 const BOARD_SEGMENTS: BoardSegment[] = [
-  { size: 3, label: '3×3', icon: '⊞' },
-  { size: 4, label: '4×4', icon: '▦' },
-  { size: 5, label: '5×5', icon: '▩' },
+  { size: 3, label: '3×3' },
+  { size: 4, label: '4×4' },
+  { size: 5, label: '5×5' },
+  { size: 6, label: '6×6' },
 ];
 
 const DIFFICULTY_META: Array<{ key: Difficulty; title: string; caption: string }> = [
@@ -25,9 +25,8 @@ const DIFFICULTY_META: Array<{ key: Difficulty; title: string; caption: string }
 
 export interface BoardOptionVm {
   index: number;
-  size: 3 | 4 | 5;
+  size: 3 | 4 | 5 | 6;
   label: string;
-  icon: string;
   selected: boolean;
 }
 
@@ -111,7 +110,6 @@ export class HomeViewModel extends Observable {
       index: idx,
       size: segment.size,
       label: segment.label,
-      icon: segment.icon,
       selected: idx === index,
     }));
     this.set('boardOptions', options);
@@ -172,7 +170,7 @@ export class HomeViewModel extends Observable {
     };
   }
 
-  private getSelectedBoardSize(): 3 | 4 | 5 {
+  private getSelectedBoardSize(): 3 | 4 | 5 | 6 {
     const index = this.get('boardSizeIndex') ?? 0;
     return BOARD_SEGMENTS[index]?.size ?? 3;
   }

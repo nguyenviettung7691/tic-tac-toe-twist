@@ -8,7 +8,7 @@ export interface Move {
 }
 
 export interface VariantConfig {
-  boardSize: 3 | 4 | 5;
+  boardSize: 3 | 4 | 5 | 6;
   winLength: 3 | 4;
   misere?: boolean;
   notakto?: boolean;

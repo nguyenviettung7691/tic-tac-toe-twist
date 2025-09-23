@@ -97,6 +97,12 @@
   height: 58;
   font-size: 26;
 }
+.board-6 .cell {
+  width: 48;
+  height: 48;
+  font-size: 22;
+}
+
 
 .cell-player-x {
   color: var(--color-deep-blue);

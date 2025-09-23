@@ -6,7 +6,7 @@ An extendable, single‑player tic‑tac‑toe with twists. Cross‑device UI vi
 
 Brainstorm: Fun Variants and New Rules
 
-- Board Size: 3x3 (classic), 4x4, 5x5. Win length configurable (3 or 4).
+- Board Size: 3x3 (classic), 4x4, 5x5, 6x6. Win length configurable (3 or 4).
 - Gravity: Pieces fall to the lowest empty cell in the chosen column.
 - Wrap (Torus): Lines can wrap across edges (e.g., right edge continues at left).
 - Misère: You lose if you make a 3‑in‑a‑row (or required win length).
@@ -140,7 +140,7 @@ Engine API (packages/engine)
 - `evaluate(state: GameState, forPlayer: Player): number`
 - `bestMove(state: GameState, options?: { depth?: number }): Move`
 
-Supported today: Classic, Board Size (3–5), Win Length (3–4), Gravity, Wrap. Other variants are declared and validated; some advanced mechanics are left as TODOs in code stubs with clear guards.
+Supported today: Classic, Board Size (3–6), Win Length (3–4), Gravity, Wrap. Other variants are declared and validated; some advanced mechanics are left as TODOs in code stubs with clear guards.
 
 ---
 
@@ -211,3 +211,4 @@ Next Steps
 3) Implement UI flows (home → game with inline result + replay).
 4) Add achievements tracking, then optional Firebase auth/sync.
 5) Iterate on variants and animations.
+

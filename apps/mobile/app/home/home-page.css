@@ -46,9 +46,6 @@
   border-radius: 18;
 }
 
-.segmented-option .icon {
-  font-size: 24;
-}
 .segmented-option.active {
   background-color: rgba(230, 241, 255, 0.8);
   color: var(--color-deep-blue);

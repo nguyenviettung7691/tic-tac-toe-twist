@@ -27,7 +27,6 @@
             </Repeater.itemsLayout>
             <Repeater.itemTemplate>
               <StackLayout class="{{ `segmented-option${selected ? ' active' : ''}` }}" tap="onSelectBoard">
-                <Label horizontalAlignment="center" class="icon" text="{{ icon }}" />
                 <Label horizontalAlignment="center" text="{{ label }}" />
               </StackLayout>
             </Repeater.itemTemplate>
@@ -82,4 +81,3 @@
     </StackLayout>
   </ScrollView>
 </Page>
-
