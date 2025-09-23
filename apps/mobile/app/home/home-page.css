@@ -181,3 +181,22 @@
   align-items: center;
   justify-content: center;
 }
+
+.winlength-control {
+  margin-top: 6;
+  margin-bottom: 4;
+  align-items: center;
+  justify-content: center;
+  flex-direction: row;
+}
+
+.winlength-chip {
+  font-size: 28;
+  margin: 0 6;
+  opacity: 1;
+  padding: 0;
+}
+.winlength-chip.selected + .winlength-chip {
+  opacity: 0.5;
+}
+

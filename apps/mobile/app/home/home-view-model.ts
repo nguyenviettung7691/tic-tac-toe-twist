@@ -1,7 +1,6 @@
 
 import { Observable } from '@nativescript/core';
 import type { Difficulty } from '@ttt/engine';
-
 import { getSnapshot, type GameSetup } from '~/state/game-store';
 
 type VariantKey = 'gravity' | 'wrap' | 'randomBlocks' | 'misere';
@@ -38,6 +37,13 @@ export interface DifficultyOptionVm {
   active: boolean;
 }
 
+export interface WinLengthOptionVm {
+  value: number;
+  enabled: boolean;
+  selected: boolean;
+  className: string;
+}
+
 export interface VariantOptionVm {
   key: VariantKey;
   title: string;
@@ -65,17 +71,17 @@ export class HomeViewModel extends Observable {
     this.set('boardSizeIndex', initialBoardIndex);
     this.set('difficultyIndex', initialDifficultyIndex);
     this.set('winLength', setup.winLength);
-    this.set('winLengthIndex', 0);
     this.set('gravity', setup.gravity);
     this.set('wrap', setup.wrap);
     this.set('randomBlocks', setup.randomBlocks);
     this.set('misere', setup.misere);
 
+    this.set('winLengthOptions', [] as WinLengthOptionVm[]);
+
     this.refreshBoardOptions();
     this.refreshDifficultyOptions();
     this.refreshVariantOptions();
     this.applyWinLengthBounds();
-    this.updateWinLengthLabel(this.get('winLength'));
   }
 
   selectBoardSize(index: number): void {
@@ -95,7 +101,7 @@ export class HomeViewModel extends Observable {
   setWinLength(value: number): void {
     const clamped = this.clampWinLength(value);
     this.set('winLength', clamped);
-    this.updateWinLengthLabel(clamped);
+    this.updateWinLengthOptions();
   }
 
   toggleVariant(key: VariantKey, next?: boolean): void {
@@ -197,8 +203,6 @@ export class HomeViewModel extends Observable {
     const max = Math.min(boardSize, 4);
     this.set('winLengthMin', min);
     this.set('winLengthMax', max);
-    this.set('winLengthArray', [...Array(max - min + 1).keys()].map(i => i + min));
-    this.set('winLengthIndex', 0);
 
     const current = this.get('winLength');
     const clamped = this.clampWinLength(
@@ -206,11 +210,31 @@ export class HomeViewModel extends Observable {
     );
     if (clamped !== current) {
       this.set('winLength', clamped);
-      this.updateWinLengthLabel(clamped);
     }
+    this.updateWinLengthOptions();
   }
 
-  private updateWinLengthLabel(value: number) {
-    this.set('winLengthLabel', `${"❎".repeat(value)}`);
+  private updateWinLengthOptions() {
+    const min = this.get('winLengthMin') ?? 3;
+    const max = this.get('winLengthMax') ?? min;
+    const current = this.get('winLength') ?? min;
+
+    const options: WinLengthOptionVm[] = Array.from({ length: max }, (_, idx) => {
+      const value = idx + 1;
+      const enabled = value >= min;
+      const selected = enabled && value === current;
+      const classes = ['winlength-chip', enabled ? 'enabled' : 'disabled'];
+      if (selected) {
+        classes.push('selected');
+      }
+      return {
+        value,
+        enabled,
+        selected,
+        className: classes.join(' '),
+      };
+    });
+
+    this.set('winLengthOptions', options);
   }
 }

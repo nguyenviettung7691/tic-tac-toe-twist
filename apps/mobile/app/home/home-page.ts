@@ -5,8 +5,6 @@ import {
   GestureEventData,
   NavigatedData,
   Page,
-  PropertyChangeData,
-  ListPicker,
   CoreTypes,
   EventData,
   Switch
@@ -27,7 +25,7 @@ export function onNavigatingTo(args: NavigatedData) {
 export function onWinLengthInfo() {
   Dialogs.alert({
     title: 'Win Length',
-    message: 'Choose how many in a row wins the game.\nSlide up or down to select.\nOptions limited by board size.',
+    message: 'Choose how many in a row wins the game.\nMinium is 3-in-a-row.\nMaximum is limited by board size.',
     okButtonText: 'Close',
   });
 }
@@ -35,7 +33,7 @@ export function onWinLengthInfo() {
 export function onVariantsInfo() {
   Dialogs.alert({
     title: 'Variants',
-    message: 'Gravity — marks fall to the lowest empty cell.\nWrap — lines connect across opposite edges.\nMisere — completing the win line hands victory to your opponent.\nRandom blocks — 1-3 cells start blocked.\n\nAnimated guides coming soon for each variant.',
+    message: 'Gravity - marks fall to the lowest empty cell.\nWrap - lines connect across opposite edges.\nMisere - completing the win line hands victory to your opponent.\nRandom blocks - 1-3 cells start blocked.\n\nAnimated guides coming soon for each variant.',
     okButtonText: 'Close',
   });
 }
@@ -69,6 +67,19 @@ export async function onSelectDifficulty(args: GestureEventData) {
   await animateTap(chip);
 }
 
+export async function onSelectWinLength(args: GestureEventData) {
+  if (!viewModel) {
+    return;
+  }
+  const target = args.object as any;
+  const context = target?.bindingContext as { value: number; enabled: boolean } | undefined;
+  if (!context || !context.enabled) {
+    return;
+  }
+  viewModel.setWinLength(context.value);
+  await animateTap(target);
+}
+
 export async function onToggleVariant(args: GestureEventData) {
   if (!viewModel) {
     return;
@@ -94,14 +105,6 @@ export function onVariantToggleChange(args: EventData) {
     return;
   }
   viewModel.toggleVariant(context.key, desired);
-}
-
-export function onWinLengthChanged(args: PropertyChangeData) {
-  if (!viewModel) {
-    return;
-  }
-  const picker = args.object as ListPicker;
-  viewModel.setWinLength(picker.items[picker.selectedIndex] as number);
 }
 
 export function onHowToPlay() {

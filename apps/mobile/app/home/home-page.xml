@@ -36,8 +36,19 @@
 
       <StackLayout class="section">
         <Label class="slider-label" text="Win length ❓" tap="onWinLengthInfo" />
-        <Label class="slider-label-detail" text="{{ winLengthLabel }}" />
-        <ListPicker class="slider" items="{{ winLengthArray }}" selectedIndex="{{ winLengthIndex }}" selectedIndexChange="onWinLengthChanged" />
+        <FlexboxLayout class="winlength-control" justifyContent="center">
+          <Repeater items="{{ winLengthOptions }}">
+            <Repeater.itemsLayout>
+              <FlexboxLayout flexDirection="row" />
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+              <Label text="❎"
+                     class="{{ className }}"
+                     tap="onSelectWinLength"
+                     isEnabled="{{ enabled }}" />
+            </Repeater.itemTemplate>
+          </Repeater>
+        </FlexboxLayout>
       </StackLayout>
 
       <StackLayout class="section">
