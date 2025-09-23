@@ -65,6 +65,19 @@
   margin-bottom: -3;
 }
 
+
+.variant-guide {
+  margin-bottom: 8;
+  padding: 6 10;
+  border-radius: 12;
+  background-color: rgba(37, 123, 222, 0.08);
+}
+
+.variant-guide-text {
+  font-family: 'Inter', 'Helvetica Neue', sans-serif;
+  font-size: 13;
+  color: rgba(31, 44, 63, 0.75);
+}
 .variant-row {
   padding: 0 10;
   margin-bottom: 5;

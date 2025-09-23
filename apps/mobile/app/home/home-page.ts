@@ -24,6 +24,22 @@ export function onNavigatingTo(args: NavigatedData) {
   page.bindingContext = viewModel;
 }
 
+export function onWinLengthInfo() {
+  Dialogs.alert({
+    title: 'Win Length',
+    message: 'Choose how many in a row wins the game.\nSlide up or down to select.\nOptions limited by board size.',
+    okButtonText: 'Close',
+  });
+}
+
+export function onVariantsInfo() {
+  Dialogs.alert({
+    title: 'Variants',
+    message: 'Gravity — marks fall to the lowest empty cell.\nWrap — lines connect across opposite edges.\nMisere — completing the win line hands victory to your opponent.\nRandom blocks — 1-3 cells start blocked.\n\nAnimated guides coming soon for each variant.',
+    okButtonText: 'Close',
+  });
+}
+
 export function onInfoTap() {
   Dialogs.alert({
     title: 'About',

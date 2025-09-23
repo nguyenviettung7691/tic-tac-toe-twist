@@ -19,7 +19,7 @@
     <StackLayout class="sheet">
       <StackLayout class="section">
         <Label class="section-heading" text="Game Setup" />
-        <Label class="section-subtitle" text="Board size 🔲" />
+        <Label class="section-subtitle" text="Board size" />
         <FlexboxLayout class="segmented" justifyContent="center">
           <Repeater items="{{ boardOptions }}">
             <Repeater.itemsLayout>
@@ -35,17 +35,13 @@
       </StackLayout>
 
       <StackLayout class="section">
-        <StackLayout>
-          <Label class="slider-label" text="{{ `Win length ${winLengthLabel}` }} " />
-          <Label class="meta" text="Choose how many in a row wins the game." textWrap="true" />
-          <Label class="meta" text="Options limited by board size." textWrap="true" />
-          <Label class="meta" text="Slide up or down to select." textWrap="true" />
-        </StackLayout>
+        <Label class="slider-label" text="Win length ❓" tap="onWinLengthInfo" />
+        <Label class="slider-label-detail" text="{{ winLengthLabel }}" />
         <ListPicker class="slider" items="{{ winLengthArray }}" selectedIndex="{{ winLengthIndex }}" selectedIndexChange="onWinLengthChanged" />
       </StackLayout>
 
       <StackLayout class="section">
-        <Label class="section-heading" text="Variants ℹ️" />
+        <Label class="section-heading" text="Variants ❓" tap="onVariantsInfo" />
         <Repeater items="{{ variantOptions }}">
           <Repeater.itemTemplate>
             <GridLayout columns="*,auto" class="variant-row" tap="onToggleVariant">
