@@ -65,6 +65,18 @@
             </GridLayout>
           </Repeater.itemTemplate>
         </Repeater>
+        <Label class="section-subtitle" text="One-Time-Power ❓" tap="onOTPInfo" />
+        <Repeater items="{{ otpOptions }}">
+          <Repeater.itemTemplate>
+            <GridLayout columns="*,auto" class="{{ `variant-row${disabled ? ' disabled' : ''}` }}" tap="onTogglePower" isEnabled="{{ !disabled }}">
+              <StackLayout col="0">
+                <Label class="variant-title" text="{{ title + ' ' + icon }}" />
+                <Label class="variant-description" text="{{ description }}" textWrap="true" />
+              </StackLayout>
+              <Switch col="1" checked="{{ active }}" isEnabled="{{ !disabled }}" checkedChange="onPowerToggleChange" />
+            </GridLayout>
+          </Repeater.itemTemplate>
+        </Repeater>
       </StackLayout>
 
       <StackLayout class="section">

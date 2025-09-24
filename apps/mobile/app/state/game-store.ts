@@ -1,4 +1,4 @@
-import { applyMove, bestMove, checkWinner, createGame, legalMoves } from '@ttt/engine';
+import { applyMove, bestMove, checkWinner, createGame, isDoubleMoveLegal, legalMoves } from '@ttt/engine';
 import type { Difficulty, GameState, Move, VariantConfig } from '@ttt/engine';
 
 export type { GameState, Move } from '@ttt/engine';
@@ -10,6 +10,7 @@ export interface GameSetup {
   wrap: boolean;
   randomBlocks: boolean;
   misere: boolean;
+  doubleMovePower: boolean;
   difficulty: Difficulty;
   vsAi: boolean;
 }
@@ -30,6 +31,7 @@ const defaultSetup: GameSetup = {
   wrap: false,
   randomBlocks: false,
   misere: false,
+  doubleMovePower: false,
   difficulty: 'balanced',
   vsAi: true,
 };
@@ -128,6 +130,7 @@ function normalizeSetup(setup: GameSetup): GameSetup {
     boardSize,
     winLength,
     misere,
+    doubleMovePower: !!setup.doubleMovePower,
   };
 }
 
@@ -178,6 +181,12 @@ function applyMoveAndUpdate(move: Move) {
 }
 
 function isMoveLegal(state: GameState, move: Move): boolean {
+  if (move.power === 'doubleMove') {
+    if (!state.config.doubleMove) {
+      return false;
+    }
+    return isDoubleMoveLegal(state, move);
+  }
   const key = `${move.r}:${move.c}`;
   return legalMoves(state).some((m) => `${m.r}:${m.c}` === key);
 }
@@ -191,6 +200,7 @@ function toVariantConfig(setup: GameSetup): VariantConfig {
     wrap: setup.wrap,
     misere: setup.misere,
     randomBlocks: setup.randomBlocks ? 3 : 0,
+    doubleMove: setup.doubleMovePower,
   };
 }
 

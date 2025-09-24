@@ -12,7 +12,7 @@ import {
 
 import { startNewGame } from '~/state/game-store';
 
-import { HomeViewModel, type VariantOptionVm } from './home-view-model';
+import { HomeViewModel, type PowerOptionVm, type VariantOptionVm } from './home-view-model';
 
 let viewModel: HomeViewModel | null = null;
 
@@ -39,7 +39,14 @@ export function onVariantsInfo() {
 export function onRulesInfo() {
   Dialogs.alert({
     title: 'Rules',
-    message: 'Gravity - marks fall to the lowest empty cell.\nWrap - lines connect across opposite edges.\nMisere - completing the win line hands victory to your opponent.\nRandom blocks - 1-3 cells start blocked.\n\nAnimated guides coming soon for each variant.',
+    message: 'Gravity - Pieces fall to the lowest empty cell in the chosen column. (Connect Four style)\nWrap - Lines can wrap across edges (e.g., right edge continues at left).\nMisere - You lose if you make a required win length row. (try not to win!)\nRandom blocks - 1–3 cells blocked at start; cannot play there.\n\nAnimated guides coming soon for each variant.',
+    okButtonText: 'Close',
+  });
+}
+export function onOTPInfo(){
+  Dialogs.alert({
+    title: 'One-Time-Powers',
+    message: 'Double Move - On the same turn, place 2 marks that are not in 1 cell space next to your other marks.\n\nAnimated guides coming soon for each power.',
     okButtonText: 'Close',
   });
 }
@@ -117,6 +124,37 @@ export function onVariantToggleChange(args: EventData) {
     return;
   }
   viewModel.toggleVariant(context.key, desired);
+}
+
+export async function onTogglePower(args: GestureEventData) {
+  if (!viewModel) {
+    return;
+  }
+  const tile = args.object as any;
+  const context = tile.bindingContext as PowerOptionVm;
+  if (context.disabled) {
+    return;
+  }
+  viewModel.togglePower(context.key);
+  await animateTap(tile);
+}
+
+export function onPowerToggleChange(args: EventData) {
+  if (!viewModel) {
+    return;
+  }
+  const control = args.object as Switch;
+  const context = control.bindingContext as PowerOptionVm | undefined;
+  if (!context || context.disabled) {
+    control.checked = false;
+    return;
+  }
+  const desired = control.checked;
+  const current = !!viewModel.get(context.key);
+  if (current === desired) {
+    return;
+  }
+  viewModel.togglePower(context.key, desired);
 }
 
 export function onHowToPlay() {

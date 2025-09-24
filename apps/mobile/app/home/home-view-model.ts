@@ -4,6 +4,7 @@ import type { Difficulty } from '@ttt/engine';
 import { getSnapshot, type GameSetup } from '~/state/game-store';
 
 type VariantKey = 'gravity' | 'wrap' | 'randomBlocks' | 'misere';
+type PowerKey = 'doubleMovePower';
 type BoardSegment = {
   size: 3 | 4 | 5 | 6;
   label: string;
@@ -52,6 +53,15 @@ export interface VariantOptionVm {
   active: boolean;
 }
 
+export interface PowerOptionVm {
+  key: PowerKey;
+  title: string;
+  description: string;
+  icon: string;
+  active: boolean;
+  disabled: boolean;
+}
+
 export class HomeViewModel extends Observable {
   constructor() {
     super();
@@ -75,8 +85,10 @@ export class HomeViewModel extends Observable {
     this.set('wrap', setup.wrap);
     this.set('randomBlocks', setup.randomBlocks);
     this.set('misere', setup.misere);
+    this.set('doubleMovePower', setup.doubleMovePower);
 
     this.set('winLengthOptions', [] as WinLengthOptionVm[]);
+    this.set('otpOptions', [] as PowerOptionVm[]);
     this.set('opponentOptions', [
       { key: 'human', title: 'Human', icon: '🧑‍🤝‍🧑', active: false, disabled: true },
       { key: 'ai', title: 'AI', icon: '🤖', active: true },
@@ -85,6 +97,7 @@ export class HomeViewModel extends Observable {
     this.refreshBoardOptions();
     this.refreshDifficultyOptions();
     this.refreshVariantOptions();
+    this.refreshOtpOptions();
     this.applyWinLengthBounds();
   }
 
@@ -113,6 +126,13 @@ export class HomeViewModel extends Observable {
     const value = typeof next === 'boolean' ? next : !current;
     this.set(key, value);
     this.refreshVariantOptions();
+  }
+
+  togglePower(key: PowerKey, next?: boolean): void {
+    const current = !!this.get(key);
+    const value = typeof next === 'boolean' ? next : !current;
+    this.set(key, value);
+    this.refreshOtpOptions();
   }
 
   refreshBoardOptions(): void {
@@ -172,6 +192,20 @@ export class HomeViewModel extends Observable {
     this.set('variantOptions', variants);
   }
 
+  refreshOtpOptions(): void {
+    const powers: PowerOptionVm[] = [
+      {
+        key: 'doubleMovePower',
+        title: 'Double Move',
+        description: 'Place two marks on the same turn.',
+        icon: '⚡',
+        active: !!this.get('doubleMovePower'),
+        disabled: false,
+      },
+    ];
+    this.set('otpOptions', powers);
+  }
+
   getSetup(): GameSetup {
     const boardSize = this.getSelectedBoardSize();
     const winLength = this.clampWinLength(this.get('winLength') ?? boardSize) as 3 | 4;
@@ -184,6 +218,7 @@ export class HomeViewModel extends Observable {
       wrap: !!this.get('wrap'),
       misere: !!this.get('misere'),
       randomBlocks: !!this.get('randomBlocks'),
+      doubleMovePower: !!this.get('doubleMovePower'),
       difficulty: difficultyMeta?.key ?? 'balanced',
       vsAi: true,
     };

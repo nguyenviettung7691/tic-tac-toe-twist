@@ -86,6 +86,9 @@
   border-color: var(--color-outline);
   background-color: var(--color-background);
 }
+.variant-row.disabled {
+  opacity: 0.5;
+}
 .variant-title {
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
   font-size: 16;

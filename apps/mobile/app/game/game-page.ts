@@ -1,9 +1,14 @@
 import { AbsoluteLayout, CoreTypes, Frame, Label, NavigatedData, Observable, Page } from '@nativescript/core';
 import type { GestureEventData } from '@nativescript/core';
-import { legalMoves } from '@ttt/engine';
+import {
+  canUseDoubleMove,
+  isDoubleMoveFirstPlacementLegal,
+  isDoubleMoveLegal,
+  legalMoves,
+} from '@ttt/engine';
 import type { Player } from '@ttt/engine';
 
-import type { GameState } from '~/state/game-store';
+import type { GameState, Move } from '~/state/game-store';
 import { getSnapshot, playerMove, rematch, subscribe, type GameSnapshot } from '~/state/game-store';
 
 interface BoardCellVM {
@@ -25,9 +30,51 @@ let currentPage: Page | null = null;
 let confettiTimer: ReturnType<typeof setTimeout> | null = null;
 let replayTimer: ReturnType<typeof setTimeout> | null = null;
 
+interface PendingDoubleMove {
+  armed: boolean;
+  firstSelection: { r: number; c: number } | null;
+}
+
+const pendingDoubleMove: PendingDoubleMove = {
+  armed: false,
+  firstSelection: null,
+};
+
+function resetPendingDoubleMove() {
+  pendingDoubleMove.armed = false;
+  pendingDoubleMove.firstSelection = null;
+}
+
+function setPendingFirstSelection(cell: { r: number; c: number } | null) {
+  pendingDoubleMove.firstSelection = cell;
+}
+
+function pendingFirstSelectionKey(): string | null {
+  if (!pendingDoubleMove.firstSelection) {
+    return null;
+  }
+  const { r, c } = pendingDoubleMove.firstSelection;
+  return `${r}:${c}`;
+}
+
+function canPlayerArmDoubleMove(snapshot: GameSnapshot): boolean {
+  const { game, busy } = snapshot;
+  if (!game || busy || game.winner) {
+    return false;
+  }
+  if (game.current !== 'X') {
+    return false;
+  }
+  if (!game.config.doubleMove) {
+    return false;
+  }
+  return canUseDoubleMove(game);
+}
+
 export function onNavigatingTo(args: NavigatedData) {
   const page = args.object as Page;
   currentPage = page;
+  resetPendingDoubleMove();
   viewModel = viewModel ?? createViewModel();
   page.bindingContext = viewModel;
 
@@ -45,6 +92,7 @@ export function onNavigatingFrom() {
   unsubscribe = null;
   stopReplay();
   clearConfetti(currentPage);
+  resetPendingDoubleMove();
   currentPage = null;
 }
 
@@ -53,7 +101,61 @@ export function onCellTap(args: GestureEventData) {
   if (!cell?.interactive) {
     return;
   }
+  const snapshot = getSnapshot();
+  if (pendingDoubleMove.armed) {
+    handleDoubleMoveTap(cell, snapshot);
+    return;
+  }
   playerMove({ r: cell.r, c: cell.c });
+}
+
+function handleDoubleMoveTap(cell: BoardCellVM, snapshot: GameSnapshot) {
+  const { game } = snapshot;
+  if (!viewModel || !game) {
+    resetPendingDoubleMove();
+    if (viewModel) updateViewModel(viewModel, snapshot);
+    return;
+  }
+
+  const usableNow = canPlayerArmDoubleMove(snapshot) && !game.powers.doubleMoveUsed.X;
+  if (!usableNow) {
+    resetPendingDoubleMove();
+    updateViewModel(viewModel, snapshot);
+    return;
+  }
+
+  if (!pendingDoubleMove.firstSelection) {
+    setPendingFirstSelection({ r: cell.r, c: cell.c });
+    updateViewModel(viewModel, snapshot);
+    return;
+  }
+
+  const first = pendingDoubleMove.firstSelection;
+  if (first.r === cell.r && first.c === cell.c) {
+    setPendingFirstSelection(null);
+    updateViewModel(viewModel, snapshot);
+    return;
+  }
+
+  const move: Move = {
+    r: first.r,
+    c: first.c,
+    extra: { r: cell.r, c: cell.c },
+    power: 'doubleMove',
+  };
+
+  const beforeMoves = game.moves.length;
+  playerMove(move);
+  const updated = getSnapshot();
+  const moved = updated.game && updated.game.moves.length > beforeMoves;
+  if (!moved) {
+    setPendingFirstSelection(null);
+    updateViewModel(viewModel, updated);
+    return;
+  }
+
+  resetPendingDoubleMove();
+  updateViewModel(viewModel, updated);
 }
 
 export function onBack() {
@@ -89,10 +191,29 @@ export function onReplay() {
   startReplay(viewModel, game);
 }
 
+export function onToggleDoubleMove() {
+  if (!viewModel) {
+    return;
+  }
+  const snapshot = getSnapshot();
+  if (pendingDoubleMove.armed) {
+    resetPendingDoubleMove();
+    updateViewModel(viewModel, snapshot);
+    return;
+  }
+  if (!canPlayerArmDoubleMove(snapshot)) {
+    return;
+  }
+  pendingDoubleMove.armed = true;
+  setPendingFirstSelection(null);
+  updateViewModel(viewModel, snapshot);
+}
+
 function createViewModel() {
   const vm = new Observable();
   vm.set('statusText', 'Preparing game...');
   vm.set('variantSummary', '');
+  vm.set('otpSummary', '');
   vm.set('difficultyLabel', '');
   vm.set('boardRows', [] as BoardRowVM[]);
   vm.set('boardClass', 'board board-3');
@@ -103,6 +224,7 @@ function createViewModel() {
   vm.set('resultTitle', '');
   vm.set('resultSummary', '');
   vm.set('resultVariantSummary', '');
+  vm.set('resultOtpSummary', '');
   vm.set('resultDifficultyLabel', '');
   vm.set('confettiVisible', false);
   vm.set('replayActive', false);
@@ -113,6 +235,10 @@ function createViewModel() {
   vm.set('resultWinLengthLabel', '');
   vm.set('replayLogs', [] as { text: string }[]);
   vm.set('replayLogsVisible', false);
+  vm.set('doubleMoveEnabled', false);
+  vm.set('doubleMoveAvailable', false);
+  vm.set('doubleMoveUsed', false);
+  vm.set('doubleMoveArmed', false);
   return vm;
 }
 function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
@@ -122,16 +248,20 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
   vm.set('aiThinkingVisible', aiThinking);
   vm.set('aiThinkingMessage', aiThinking ? 'AI is thinking...' : '');
 
+  syncDoubleMoveUi(vm, snapshot);
+
   if (!game) {
     stopReplay();
     vm.set('boardRows', []);
     vm.set('variantSummary', '');
+    vm.set('otpSummary', '');
     vm.set('difficultyLabel', '');
     vm.set('statusText', 'Head back to the home screen to start a new match.');
     vm.set('resultVisible', false);
     vm.set('resultTitle', '');
     vm.set('resultSummary', '');
     vm.set('resultVariantSummary', '');
+    vm.set('resultOtpSummary', '');
     vm.set('resultDifficultyLabel', '');
     vm.set('resultWinLengthLabel', '');
     vm.set('confettiVisible', false);
@@ -148,6 +278,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
 
   vm.set('boardClass', `board board-${game.board.length}`);
   vm.set('variantSummary', formatVariantSummary(game));
+  vm.set('otpSummary', formatOtpSummary(game));
   vm.set('difficultyLabel', formatDifficulty(settings.difficulty));
   vm.set('statusText', buildStatusText(game, busy));
   vm.set('replayTotal', game.moves.length);
@@ -167,6 +298,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultTitle', buildResultTitle(game));
     vm.set('resultSummary', buildResultSummary(game));
     vm.set('resultVariantSummary', formatVariantSummary(game));
+    vm.set('resultOtpSummary', formatOtpSummary(game));
     vm.set('resultDifficultyLabel', formatResultDifficulty(settings.difficulty));
     vm.set('resultWinLengthLabel', formatWinLength(game));
     const playerWon = game.winner === 'X';
@@ -181,6 +313,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultTitle', '');
     vm.set('resultSummary', '');
     vm.set('resultVariantSummary', '');
+    vm.set('resultOtpSummary', '');
     vm.set('resultDifficultyLabel', '');
     vm.set('resultWinLengthLabel', '');
     vm.set('confettiVisible', false);
@@ -188,12 +321,66 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
   }
 }
 
+function syncDoubleMoveUi(vm: Observable, snapshot: GameSnapshot) {
+  const { game } = snapshot;
+  if (!game) {
+    vm.set('doubleMoveEnabled', false);
+    vm.set('doubleMoveAvailable', false);
+    vm.set('doubleMoveUsed', false);
+    vm.set('doubleMoveArmed', false);
+    resetPendingDoubleMove();
+    return;
+  }
+
+  const enabled = !!game.config.doubleMove;
+  const used = enabled ? game.powers.doubleMoveUsed.X : false;
+  const availableThisTurn = enabled && canPlayerArmDoubleMove(snapshot);
+
+  if ((!availableThisTurn || used) && pendingDoubleMove.armed) {
+    resetPendingDoubleMove();
+  } else if (!availableThisTurn) {
+    setPendingFirstSelection(null);
+  }
+
+  vm.set('doubleMoveEnabled', enabled);
+  vm.set('doubleMoveAvailable', availableThisTurn && !used);
+  vm.set('doubleMoveUsed', used);
+  vm.set('doubleMoveArmed', pendingDoubleMove.armed && availableThisTurn && !used);
+}
+
 function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<string>): BoardRowVM[] {
   const isHumanTurn = !busy && !game.winner && game.current === 'X';
-  const legal = new Set<string>();
-  if (isHumanTurn) {
-    for (const m of legalMoves(game)) {
-      legal.add(`${m.r}:${m.c}`);
+  const legalMovesList = isHumanTurn ? legalMoves(game) : [];
+  const legal = new Set<string>(legalMovesList.map((m) => `${m.r}:${m.c}`));
+
+  const powerArmed = pendingDoubleMove.armed && isHumanTurn && !game.winner;
+  const powerFirst = powerArmed ? pendingDoubleMove.firstSelection : null;
+  const powerFirstKey = powerFirst ? `${powerFirst.r}:${powerFirst.c}` : null;
+  let powerFirstChoices: Set<string> | null = null;
+  let powerSecondChoices: Set<string> | null = null;
+  if (powerArmed && !powerFirst) {
+    powerFirstChoices = new Set<string>();
+    for (const m of legalMovesList) {
+      if (isDoubleMoveFirstPlacementLegal(game, { r: m.r, c: m.c })) {
+        powerFirstChoices.add(`${m.r}:${m.c}`);
+      }
+    }
+  }
+  if (powerFirst) {
+    powerSecondChoices = new Set<string>();
+    for (const m of legalMovesList) {
+      if (m.r === powerFirst.r && m.c === powerFirst.c) {
+        continue;
+      }
+      const candidateMove: Move = {
+        r: powerFirst.r,
+        c: powerFirst.c,
+        extra: { r: m.r, c: m.c },
+        power: 'doubleMove',
+      };
+      if (isDoubleMoveLegal(game, candidateMove)) {
+        powerSecondChoices.add(`${m.r}:${m.c}`);
+      }
     }
   }
 
@@ -212,7 +399,12 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
         classes.push('cell-blocked');
       }
 
-      if (game.lastMove && game.lastMove.r === r && game.lastMove.c === c) {
+      const lastMove = game.lastMove;
+      if (
+        lastMove &&
+        ((lastMove.r === r && lastMove.c === c) ||
+          (lastMove.power === 'doubleMove' && lastMove.extra && lastMove.extra.r === r && lastMove.extra.c === c))
+      ) {
         classes.push('cell-last');
       }
 
@@ -220,9 +412,30 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
         classes.push('cell-winning');
       }
 
-      const interactive = isHumanTurn && legal.has(key) && cell === null;
+      let interactive = isHumanTurn && legal.has(key) && cell === null;
+      if (powerArmed) {
+        if (!powerFirst) {
+          const allowedFirst = powerFirstChoices?.has(key) ?? false;
+          interactive = interactive && allowedFirst;
+        } else if (powerFirstKey === key) {
+          interactive = true;
+        } else {
+          const allowedSecond = powerSecondChoices?.has(key) ?? false;
+          interactive = interactive && allowedSecond;
+        }
+      }
       if (interactive) {
         classes.push('cell-legal');
+      }
+
+      if (powerArmed) {
+        if (powerFirstKey === key) {
+          classes.push('cell-power-selected');
+        } else if (!powerFirst || (powerSecondChoices?.has(key) ?? false)) {
+          if (interactive) {
+            classes.push('cell-power-armed');
+          }
+        }
       }
 
       return {
@@ -238,6 +451,12 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
 }
 
 function buildStatusText(game: GameState, busy: boolean): string {
+  if (game.config.doubleMove && pendingDoubleMove.armed && game.current === 'X' && !game.winner) {
+    if (pendingDoubleMove.firstSelection) {
+      return 'Double Move armed. Pick the second cell.';
+    }
+    return 'Double Move armed. Pick the first cell.';
+  }
   if (game.winner === 'Draw') {
     return "It's a draw!";
   }
@@ -307,8 +526,11 @@ function runReplayStep(vm: Observable, game: GameState, winningSet: Set<string> 
   const limit = Math.min(step, moves.length);
   for (let i = 0; i < limit; i++) {
     const move = moves[i];
-    const player: Player = i % 2 === 0 ? 'X' : 'O';
+    const player: Player = move.player ?? (i % 2 === 0 ? 'X' : 'O');
     board[move.r][move.c] = player;
+    if (move.power === 'doubleMove' && move.extra) {
+      board[move.extra.r][move.extra.c] = player;
+    }
   }
 
   const lastMove = limit > 0 ? moves[limit - 1] : undefined;
@@ -327,9 +549,9 @@ function runReplayStep(vm: Observable, game: GameState, winningSet: Set<string> 
   vm.set('replayTotal', moves.length);
 
   if (limit > 0) {
-    const occupant: Player = (limit - 1) % 2 === 0 ? 'X' : 'O';
     const move = moves[limit - 1];
-    appendReplayLog(vm, `Move ${limit}/${moves.length}: ${occupant} -> (${move.r + 1}, ${move.c + 1})`);
+    const occupant: Player = move.player ?? ((limit - 1) % 2 === 0 ? 'X' : 'O');
+    appendReplayLog(vm, formatReplayEntry(move, occupant, limit, moves.length));
   }
 
   if (step >= moves.length) {
@@ -363,6 +585,16 @@ function toWinningCellSet(game: GameState): Set<string> | null {
     return null;
   }
   return new Set(winningLine.map(({ r, c }) => `${r}:${c}`));
+}
+
+function formatReplayEntry(move: Move, player: Player, step: number, total: number): string {
+  const prefix = `Move ${step}/${total}: ${player}`;
+  if (move.power === 'doubleMove' && move.extra) {
+    const first = move.extra;
+    const second = { r: move.r, c: move.c };
+    return `${prefix} Double Move -> (${first.r + 1}, ${first.c + 1}) then (${second.r + 1}, ${second.c + 1})`;
+  }
+  return `${prefix} -> (${move.r + 1}, ${move.c + 1})`;
 }
 function findWinningLine(game: GameState): { r: number; c: number }[] | null {
   if (!game.winner || game.winner === 'Draw') {
@@ -560,6 +792,23 @@ function formatVariantSummary(game: GameState): string[] {
     variants.push('🧱 Blocks - 1-3 cells start blocked.');
   }
   return variants;
+}
+
+function formatOtpSummary(game: GameState): string[] {
+  const otp = [];
+  if (game.config.doubleMove) {
+    const { doubleMoveUsed } = game.powers;
+    let status = 'Unused so far.';
+    if (doubleMoveUsed.X && doubleMoveUsed.O) {
+      status = 'Both players used it.';
+    } else if (doubleMoveUsed.X) {
+      status = 'You already used it.';
+    } else if (doubleMoveUsed.O) {
+      status = 'AI already used it.';
+    }
+    otp.push('⚡ Double Move - Place two marks once. ' + status);
+  }
+  return otp;
 }
 
 function formatDifficulty(value: GameSnapshot['settings']['difficulty']): string {

@@ -1,4 +1,4 @@
-import type { Cell, GameState, Move, Player, VariantConfig } from './types.js';
+import type { Cell, GameState, Move, MovePlacement, Player, VariantConfig } from './types.js';
 
 export function createBoard(n: number): Cell[][] {
   return Array.from({ length: n }, () => Array<Cell>(n).fill(null));
@@ -36,6 +36,164 @@ export function emptyCells(board: Cell[][]): Move[] {
   return out;
 }
 
+function areAdjacent(a: MovePlacement, b: MovePlacement): boolean {
+  const dr = Math.abs(a.r - b.r);
+  const dc = Math.abs(a.c - b.c);
+  return Math.max(dr, dc) <= 1;
+}
+
+function adjacentToAny(target: MovePlacement, marks: MovePlacement[]): boolean {
+  for (const mark of marks) {
+    if (areAdjacent(target, mark)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function collectPlayerMarks(board: Cell[][], player: Player): MovePlacement[] {
+  const marks: MovePlacement[] = [];
+  for (let r = 0; r < board.length; r++) {
+    for (let c = 0; c < board[r].length; c++) {
+      if (board[r][c] === player) {
+        marks.push({ r, c });
+      }
+    }
+  }
+  return marks;
+}
+
+function simulatePlacement(
+  board: Cell[][],
+  target: MovePlacement,
+  config: VariantConfig,
+  player: Player
+): { board: Cell[][]; final: MovePlacement } | null {
+  const n = board.length;
+  if (!inBounds(n, target.r, target.c)) {
+    return null;
+  }
+  const cell = board[target.r][target.c];
+  if (cell !== null) {
+    return null;
+  }
+  const { gravity } = config;
+  const final = gravity ? applyGravity(board, target.r, target.c) : { r: target.r, c: target.c };
+  if (!inBounds(n, final.r, final.c)) {
+    return null;
+  }
+  if (board[final.r][final.c] !== null) {
+    return null;
+  }
+  const next = place(board, final.r, final.c, player);
+  return { board: next, final };
+}
+
+function resolveDoubleMove(state: GameState, move: Move): { board: Cell[][]; placements: [MovePlacement, MovePlacement] } | null {
+  if (move.power !== 'doubleMove') {
+    return null;
+  }
+  if (!state.config.doubleMove) {
+    return null;
+  }
+  const { doubleMoveUsed } = state.powers;
+  if (doubleMoveUsed[state.current]) {
+    return null;
+  }
+  const secondary = move.extra;
+  if (!secondary) {
+    return null;
+  }
+  const baseLegals = new Set(legalMoves(state).map((m) => `${m.r}:${m.c}`));
+  const firstKey = `${move.r}:${move.c}`;
+  const secondKey = `${secondary.r}:${secondary.c}`;
+  if (!baseLegals.has(firstKey) || !baseLegals.has(secondKey)) {
+    return null;
+  }
+  if (move.r === secondary.r && move.c === secondary.c) {
+    return null;
+  }
+
+  const attempts: Array<[MovePlacement, MovePlacement]> = [
+    [
+      { r: move.r, c: move.c },
+      { r: secondary.r, c: secondary.c },
+    ],
+  ];
+  if (move.r !== secondary.r || move.c !== secondary.c) {
+    attempts.push([
+      { r: secondary.r, c: secondary.c },
+      { r: move.r, c: move.c },
+    ]);
+  }
+
+  const ownMarks = collectPlayerMarks(state.board, state.current);
+
+  for (const order of attempts) {
+    let board = cloneBoard(state.board);
+    const finals: MovePlacement[] = [];
+    let valid = true;
+    const marksCheck = [...ownMarks];
+    for (const target of order) {
+      const result = simulatePlacement(board, target, state.config, state.current);
+      if (!result) {
+        valid = false;
+        break;
+      }
+      if (adjacentToAny(result.final, marksCheck)) {
+        valid = false;
+        break;
+      }
+      board = result.board;
+      finals.push(result.final);
+      marksCheck.push(result.final);
+    }
+    if (!valid || finals.length !== 2) {
+      continue;
+    }
+    if (areAdjacent(finals[0], finals[1])) {
+      continue;
+    }
+    return { board, placements: [finals[0], finals[1]] };
+  }
+
+  return null;
+}
+
+export function canUseDoubleMove(state: GameState): boolean {
+  if (!state.config.doubleMove) {
+    return false;
+  }
+  return !state.powers.doubleMoveUsed[state.current];
+}
+
+export function isDoubleMoveLegal(state: GameState, move: Move): boolean {
+  return resolveDoubleMove(state, move) !== null;
+}
+
+export function isDoubleMoveFirstPlacementLegal(state: GameState, move: Move): boolean {
+  if (!state.config.doubleMove) {
+    return false;
+  }
+  if (state.powers.doubleMoveUsed[state.current]) {
+    return false;
+  }
+  const key = `${move.r}:${move.c}`;
+  const baseLegal = legalMoves(state).some((m) => `${m.r}:${m.c}` === key);
+  if (!baseLegal) {
+    return false;
+  }
+  const result = simulatePlacement(state.board, { r: move.r, c: move.c }, state.config, state.current);
+  if (!result) {
+    return false;
+  }
+  const ownMarks = collectPlayerMarks(state.board, state.current);
+  if (adjacentToAny(result.final, ownMarks)) {
+    return false;
+  }
+  return true;
+}
+
 export function nextPlayer(p: Player): Player {
   return p === 'X' ? 'O' : 'X';
 }
@@ -56,44 +214,71 @@ export function initState(config: VariantConfig): GameState {
       }
     }
   }
-  return { board, current: 'X', config, moves: [], winner: null };
+  return {
+    board,
+    current: 'X',
+    config,
+    moves: [],
+    winner: null,
+    powers: {
+      doubleMoveUsed: { X: false, O: false },
+    },
+  };
 }
 
 export function legalMoves(state: GameState): Move[] {
   // For now, support placements on empty cells only. Powers/constraints are TODO.
-  const base = emptyCells(state.board).filter((m) => state.board[m.r][m.c] === null);
-  if (!state.lastMove) return base;
-  // Relative to opponent's last move
-  const { r: lr, c: lc } = state.lastMove;
-  const deltas = [
-    [2, 1], [2, -1], [-2, 1], [-2, -1],
-    [1, 2], [1, -2], [-1, 2], [-1, -2],
-  ];
-  const set = new Set(base.map((m) => `${m.r}:${m.c}`));
-  const allowed = new Set<string>();
-  for (const [dr, dc] of deltas) {
-    const r = lr + dr, c = lc + dc;
-    if (inBounds(state.board.length, r, c) && set.has(`${r}:${c}`)) allowed.add(`${r}:${c}`);
-  }
-  return [...allowed].map((s) => {
-    const [r, c] = s.split(':').map((x) => parseInt(x, 10));
-    return { r, c };
-  });
+  return emptyCells(state.board).filter((m) => state.board[m.r][m.c] === null);
 }
 
 export function applyMove(state: GameState, move: Move): GameState {
+  if (move.power === 'doubleMove') {
+    const resolved = resolveDoubleMove(state, move);
+    if (!resolved) {
+      throw new Error('Illegal move');
+    }
+    const [first, second] = resolved.placements;
+    const player = state.current;
+    const storedMove: Move = {
+      r: second.r,
+      c: second.c,
+      extra: { r: first.r, c: first.c },
+      player,
+      power: 'doubleMove',
+    };
+    return {
+      ...state,
+      board: resolved.board,
+      moves: [...state.moves, storedMove],
+      current: nextPlayer(player),
+      lastMove: storedMove,
+      powers: {
+        ...state.powers,
+        doubleMoveUsed: {
+          ...state.powers.doubleMoveUsed,
+          [player]: true,
+        },
+      },
+    };
+  }
+
   const { r, c } = move;
   const n = state.board.length;
   if (!inBounds(n, r, c) || state.board[r][c] !== null) throw new Error('Illegal move');
   const { gravity } = state.config;
   const final = gravity ? applyGravity(state.board, r, c) : { r, c };
+  if (state.board[final.r][final.c] !== null) {
+    throw new Error('Illegal move');
+  }
   const nb = place(state.board, final.r, final.c, state.current);
+  const player = state.current;
+  const storedMove: Move = { r: final.r, c: final.c, player };
   return {
     ...state,
     board: nb,
-    moves: [...state.moves, final],
-    current: nextPlayer(state.current),
-    lastMove: final,
+    moves: [...state.moves, storedMove],
+    current: nextPlayer(player),
+    lastMove: storedMove,
   };
 }
 

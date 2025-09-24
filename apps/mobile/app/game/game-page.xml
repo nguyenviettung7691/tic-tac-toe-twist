@@ -21,11 +21,6 @@
     <ScrollView row="0" col="0">
       <StackLayout class="screen" spacing="20">
         <StackLayout class="card game-info" padding="10" spacing="8" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
-          <FlexboxLayout class="turn-banner" flexDirection="row" alignItems="center" justifyContent="center">
-            <ActivityIndicator class="thinking-spinner" busy="{{ aiThinkingVisible }}" visibility="{{ aiThinkingVisible ? 'visible' : 'collapse' }}" />
-            <Label class="status" text="{{ aiThinkingMessage }}" visibility="{{ aiThinkingVisible ? 'visible' : 'collapse' }}" />
-            <Label text="{{ statusText }}" class="status" textWrap="true" visibility="{{ aiThinkingVisible ? 'collapse' : 'visible' }}" />
-          </FlexboxLayout>
           <Label textWrap="true">
             <FormattedString>
               <Span text="Difficulty: " fontWeight="bold" />
@@ -52,11 +47,38 @@
                 <Label text="{{ $value }}" />
             </Repeater.itemTemplate>
           </Repeater>
+          <Label textWrap="true">
+            <FormattedString>
+              <Span text="One-Time-Powers: " fontWeight="bold" />
+              <Span text="{{ otpSummary.length < 1 ? 'Vanilla' : '' }}" />
+            </FormattedString>
+          </Label>
+          <Repeater items="{{ otpSummary }}" visibility="{{ otpSummary.length > 0 ? 'visible' : 'collapse' }}">
+            <Repeater.itemsLayout>
+                <StackLayout />
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+                <Label text="{{ $value }}" />
+            </Repeater.itemTemplate>
+          </Repeater>
+          <FlexboxLayout class="otp-section" flexDirection="row" alignItems="center" justifyContent="center" visibility="{{ doubleMoveEnabled ? 'visible' : 'collapse' }}">
+            <StackLayout class="otp-card double-move" visibility="{{ doubleMoveEnabled ? 'visible' : 'collapse' }}">
+              <Label class="otp-title" text="Double Move" />
+              <Label class="otp-description" text="Place two non-adjacent marks on a single turn." textWrap="true" />
+              <Button class="otp-button"
+                      text="{{ doubleMoveUsed ? 'Double Move Used' : (doubleMoveArmed ? 'Cancel Double Move' : 'Invoke ⚡') }}"
+                      tap="onToggleDoubleMove"
+                      isEnabled="{{ (doubleMoveAvailable || doubleMoveArmed) && !doubleMoveUsed }}" />
+            </StackLayout>
+          </FlexboxLayout>
+          <FlexboxLayout class="turn-banner" flexDirection="row" alignItems="center" justifyContent="center">
+            <ActivityIndicator class="thinking-spinner" busy="{{ aiThinkingVisible }}" visibility="{{ aiThinkingVisible ? 'visible' : 'collapse' }}" />
+            <Label class="status" text="{{ aiThinkingMessage }}" visibility="{{ aiThinkingVisible ? 'visible' : 'collapse' }}" />
+            <Label text="{{ statusText }}" class="status" textWrap="true" visibility="{{ aiThinkingVisible ? 'collapse' : 'visible' }}" />
+          </FlexboxLayout>
         </StackLayout>
 
         <StackLayout class="card result-card" padding="10" spacing="12" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
-          <Label text="{{ resultTitle }}" class="result-title" textWrap="true" />
-          <Label text="{{ resultSummary }}" class="result-summary" textWrap="true" />
           <Label textWrap="true">
             <FormattedString>
               <Span text="Difficulty: " fontWeight="bold" />
@@ -83,6 +105,24 @@
                 <Label text="{{ $value }}" />
             </Repeater.itemTemplate>
           </Repeater>
+          <Label textWrap="true">
+            <FormattedString>
+              <Span text="One-Time-Powers: " fontWeight="bold" />
+              <Span text="{{ resultOtpSummary.length < 1 ? 'Vanilla' : '' }}" />
+            </FormattedString>
+          </Label>
+          <Repeater items="{{ resultOtpSummary }}" visibility="{{ resultOtpSummary.length > 0 ? 'visible' : 'collapse' }}">
+            <Repeater.itemsLayout>
+                <StackLayout />
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+                <Label text="{{ $value }}" />
+            </Repeater.itemTemplate>
+          </Repeater>
+          <StackLayout class="result-banner">
+            <Label text="{{ resultTitle }}" class="result-title" textWrap="true" />
+            <Label text="{{ resultSummary }}" class="result-summary" textWrap="true" />
+          </StackLayout>
         </StackLayout>
 
         <FlexboxLayout class="board-shell" justifyContent="center">

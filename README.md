@@ -18,7 +18,7 @@ Rules are applied throughout the game:
 
 Players can perform a One-Time-Power instead of placing a mark (unless OTP stated otherwise):
 
-- Double Move: On the same turn, place 2 marks that are not in 1 cell space next to each other.
+- Double Move: On the same turn, place 2 marks that are not in 1 cell space next to your other marks.
 - Lane Shift: Shift a selected row or column by one cell cyclically.
 - Bomb: Removes a single opponent mark.
 

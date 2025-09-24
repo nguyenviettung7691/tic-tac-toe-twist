@@ -1,9 +1,19 @@
 export type Player = 'X' | 'O';
 export type Cell = Player | null | 'B'; // 'B' for blocked
 
+export type OneTimePowerId = 'doubleMove';
+
+export interface MovePlacement {
+  r: number;
+  c: number;
+}
+
 export interface Move {
   r: number;
   c: number;
+  player?: Player;
+  power?: OneTimePowerId;
+  extra?: MovePlacement;
   // Future: power actions, shifts, bombs, etc.
 }
 
@@ -26,6 +36,9 @@ export interface GameState {
   moves: Move[];
   winner: Player | 'Draw' | null;
   lastMove?: Move;
+  powers: {
+    doubleMoveUsed: Record<Player, boolean>;
+  };
 }
 
 export type Difficulty = 'chill' | 'balanced' | 'sharp';
