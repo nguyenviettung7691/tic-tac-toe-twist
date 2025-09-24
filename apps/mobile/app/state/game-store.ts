@@ -1,4 +1,12 @@
-import { applyMove, bestMove, checkWinner, createGame, isDoubleMoveLegal, legalMoves } from '@ttt/engine';
+import {
+  applyMove,
+  bestMove,
+  checkWinner,
+  createGame,
+  isDoubleMoveLegal,
+  isLaneShiftLegal,
+  legalMoves,
+} from '@ttt/engine';
 import type { Difficulty, GameState, Move, VariantConfig } from '@ttt/engine';
 
 export type { GameState, Move } from '@ttt/engine';
@@ -10,6 +18,7 @@ export interface GameSetup {
   wrap: boolean;
   randomBlocks: boolean;
   misere: boolean;
+  laneShiftPower: boolean;
   doubleMovePower: boolean;
   difficulty: Difficulty;
   vsAi: boolean;
@@ -31,6 +40,7 @@ const defaultSetup: GameSetup = {
   wrap: false,
   randomBlocks: false,
   misere: false,
+  laneShiftPower: false,
   doubleMovePower: false,
   difficulty: 'balanced',
   vsAi: true,
@@ -130,6 +140,7 @@ function normalizeSetup(setup: GameSetup): GameSetup {
     boardSize,
     winLength,
     misere,
+    laneShiftPower: !!setup.laneShiftPower,
     doubleMovePower: !!setup.doubleMovePower,
   };
 }
@@ -187,6 +198,15 @@ function isMoveLegal(state: GameState, move: Move): boolean {
     }
     return isDoubleMoveLegal(state, move);
   }
+  if (move.power === 'laneShift') {
+    if (!state.config.laneShift) {
+      return false;
+    }
+    return isLaneShiftLegal(state, move);
+  }
+  if (typeof move.r !== 'number' || typeof move.c !== 'number') {
+    return false;
+  }
   const key = `${move.r}:${move.c}`;
   return legalMoves(state).some((m) => `${m.r}:${m.c}` === key);
 }
@@ -200,6 +220,7 @@ function toVariantConfig(setup: GameSetup): VariantConfig {
     wrap: setup.wrap,
     misere: setup.misere,
     randomBlocks: setup.randomBlocks ? 3 : 0,
+    laneShift: setup.laneShiftPower,
     doubleMove: setup.doubleMovePower,
   };
 }

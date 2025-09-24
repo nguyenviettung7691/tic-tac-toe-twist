@@ -1,7 +1,13 @@
 export type Player = 'X' | 'O';
 export type Cell = Player | null | 'B'; // 'B' for blocked
 
-export type OneTimePowerId = 'doubleMove';
+export type OneTimePowerId = 'doubleMove' | 'laneShift';
+
+export interface LaneShift {
+  axis: 'row' | 'column';
+  index: number;
+  direction: 1 | -1;
+}
 
 export interface MovePlacement {
   r: number;
@@ -9,11 +15,12 @@ export interface MovePlacement {
 }
 
 export interface Move {
-  r: number;
-  c: number;
+  r?: number;
+  c?: number;
   player?: Player;
   power?: OneTimePowerId;
   extra?: MovePlacement;
+  shift?: LaneShift;
   // Future: power actions, shifts, bombs, etc.
 }
 
@@ -25,9 +32,12 @@ export interface VariantConfig {
   wrap?: boolean;
   randomBlocks?: number; // 0..N (random 1..N blocks when >0)
   doubleMove?: boolean;
+  laneShift?: boolean;
   allowRowColShift?: boolean;
   allowBomb?: boolean;
 }
+
+export type PowerUsage = Record<OneTimePowerId, Record<Player, boolean>>;
 
 export interface GameState {
   board: Cell[][];
@@ -36,9 +46,7 @@ export interface GameState {
   moves: Move[];
   winner: Player | 'Draw' | null;
   lastMove?: Move;
-  powers: {
-    doubleMoveUsed: Record<Player, boolean>;
-  };
+  powers: PowerUsage;
 }
 
 export type Difficulty = 'chill' | 'balanced' | 'sharp';

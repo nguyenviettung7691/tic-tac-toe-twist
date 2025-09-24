@@ -32,21 +32,21 @@ export function onWinLengthInfo() {
 export function onVariantsInfo() {
   Dialogs.alert({
     title: 'Variants',
-    message: 'Players can enable multiple toggles at game start; conflicts are flagged.\nVariants can be a Rule or a One-Time-Power.\nRules are applied throughout the game.\nPlayers can trade their turn for a One-Time-Power.',
+    message: 'Players can enable & combine multiple variant toggles; creating a new set of rules for the game.\nConflicting variants are flagged.',
     okButtonText: 'Close',
   });
 }
 export function onRulesInfo() {
   Dialogs.alert({
     title: 'Rules',
-    message: 'Gravity - Pieces fall to the lowest empty cell in the chosen column. (Connect Four style)\nWrap - Lines can wrap across edges (e.g., right edge continues at left).\nMisere - You lose if you make a required win length row. (try not to win!)\nRandom blocks - 1–3 cells blocked at start; cannot play there.\n\nAnimated guides coming soon for each variant.',
+    message: 'Rules are applied throughout the game for both players:\n\nGravity - Pieces fall to the lowest empty cell in the chosen column. (Connect Four style)\nWrap - Lines can wrap across edges (e.g., right edge continues at left).\nMisere - You lose if you make a required win length row. (try not to win!)\nRandom blocks - 1–3 cells blocked at start; cannot play there.\n\nAnimated guides coming soon for each variant.',
     okButtonText: 'Close',
   });
 }
 export function onOTPInfo(){
   Dialogs.alert({
     title: 'One-Time-Powers',
-    message: 'Double Move - On the same turn, place 2 marks that are not in 1 cell space next to your other marks.\n\nAnimated guides coming soon for each power.',
+    message: 'Players can perform a One-Time-Power in return for placing a mark on their turn:\n\nDouble Move - On the same turn, place 2 marks that are not in 1 cell space next to your other marks.\nLane Shift - Shift a selected row or column by one cell cyclically.\n\nAnimated guides coming soon for each power.',
     okButtonText: 'Close',
   });
 }

@@ -219,36 +219,46 @@
 }
 
 .cell-power-armed {
-  border-color: rgba(37, 123, 222, 0.65);
+  border-color: rgba(219, 222, 37, 0.65);
   border-width: 2;
 }
 .cell-power-selected {
-  background-color: rgba(37, 123, 222, 0.3);
-  border-color: var(--color-deep-blue);
+  background-color: rgb(222, 213, 37);
+  border-color: rgba(219, 222, 37, 0.65);
   border-width: 3;
 }
-
-.otp-section {
-  padding: 0;
-  margin: 0;
-  gap: 2;
+.cell-power-lane {
+  border-color: rgba(132, 94, 247, 0.7);
+  border-width: 2;
 }
-.otp-card {
+
+.otp-wrapper {
   margin: 10 0;
-  padding: 5 10;
+  gap: 8;
+}
+.otp-section {
+  padding: 10 12;
   border-radius: 14;
   border-width: 1;
   border-color: rgba(37, 123, 222, 0.28);
   background-color: rgba(230, 241, 255, 0.35);
+  gap: 6;
   text-align: center;
 }
-.otp-card.double-move {
-  border-color: rgba(222, 210, 37, 0.28);
-  background-color: rgba(255, 253, 230, 0.35);
+.otp-section.doubleMove {
+  border-color: rgba(222, 222, 37, 0.28);
+  background-color: rgba(255, 255, 230, 0.35);
 }
-.otp-card.double-move .otp-button {
-  background-color: #dee696;
+.otp-section.doubleMove .otp-button {
+  background-color: #cfde25;
   color: var(--color-ink);
+}
+.otp-section.laneShift {
+  border-color: rgba(167, 37, 222, 0.28);
+  background-color: rgba(248, 230, 255, 0.35);
+}
+.otp-section.laneShift .otp-button {
+  background-color: #b925de;
 }
 .otp-title {
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
@@ -266,10 +276,14 @@
   background-color: var(--color-deep-blue);
   color: #fff;
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
-  font-size: 20;
-  padding: 10;
+  font-size: 18;
+  padding: 8 12;
   font-weight: 700;
 }
+.otp-button.armed {
+  background-color: rgba(37, 123, 222, 0.6);
+}
+
 .otp-button:disabled {
   background-color: rgba(37, 123, 222, 0.35);
   color: rgba(255, 255, 255, 0.7);

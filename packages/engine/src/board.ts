@@ -1,4 +1,14 @@
-import type { Cell, GameState, Move, MovePlacement, Player, VariantConfig } from './types.js';
+import type {
+  Cell,
+  GameState,
+  LaneShift,
+  Move,
+  MovePlacement,
+  Player,
+  OneTimePowerId,
+  PowerUsage,
+  VariantConfig,
+} from './types.js';
 
 export function createBoard(n: number): Cell[][] {
   return Array.from({ length: n }, () => Array<Cell>(n).fill(null));
@@ -63,6 +73,46 @@ function collectPlayerMarks(board: Cell[][], player: Player): MovePlacement[] {
   return marks;
 }
 
+function createInitialPowerUsage(): PowerUsage {
+  return {
+    doubleMove: { X: false, O: false },
+    laneShift: { X: false, O: false },
+  };
+}
+
+function shiftRowInPlace(board: Cell[][], rowIndex: number, direction: 1 | -1): void {
+  const row = board[rowIndex].slice();
+  const n = row.length;
+  const next: Cell[] = Array(n);
+  for (let c = 0; c < n; c++) {
+    const source = (c - direction + n) % n;
+    next[c] = row[source];
+  }
+  board[rowIndex] = next;
+}
+
+function shiftColumnInPlace(board: Cell[][], columnIndex: number, direction: 1 | -1): void {
+  const n = board.length;
+  const next: Cell[] = Array(n);
+  for (let r = 0; r < n; r++) {
+    const source = (r - direction + n) % n;
+    next[r] = board[source][columnIndex];
+  }
+  for (let r = 0; r < n; r++) {
+    board[r][columnIndex] = next[r];
+  }
+}
+
+function markPowerUsed(powers: PowerUsage, power: OneTimePowerId, player: Player): PowerUsage {
+  return {
+    ...powers,
+    [power]: {
+      ...powers[power],
+      [player]: true,
+    },
+  };
+}
+
 function simulatePlacement(
   board: Cell[][],
   target: MovePlacement,
@@ -96,34 +146,39 @@ function resolveDoubleMove(state: GameState, move: Move): { board: Cell[][]; pla
   if (!state.config.doubleMove) {
     return null;
   }
-  const { doubleMoveUsed } = state.powers;
-  if (doubleMoveUsed[state.current]) {
+  const usage = state.powers.doubleMove;
+  if (usage[state.current]) {
     return null;
   }
   const secondary = move.extra;
   if (!secondary) {
     return null;
   }
+  const r = move.r;
+  const c = move.c;
+  if (typeof r !== 'number' || typeof c !== 'number') {
+    return null;
+  }
   const baseLegals = new Set(legalMoves(state).map((m) => `${m.r}:${m.c}`));
-  const firstKey = `${move.r}:${move.c}`;
+  const firstKey = `${r}:${c}`;
   const secondKey = `${secondary.r}:${secondary.c}`;
   if (!baseLegals.has(firstKey) || !baseLegals.has(secondKey)) {
     return null;
   }
-  if (move.r === secondary.r && move.c === secondary.c) {
+  if (r === secondary.r && c === secondary.c) {
     return null;
   }
 
   const attempts: Array<[MovePlacement, MovePlacement]> = [
     [
-      { r: move.r, c: move.c },
+      { r, c },
       { r: secondary.r, c: secondary.c },
     ],
   ];
-  if (move.r !== secondary.r || move.c !== secondary.c) {
+  if (r !== secondary.r || c !== secondary.c) {
     attempts.push([
       { r: secondary.r, c: secondary.c },
-      { r: move.r, c: move.c },
+      { r, c },
     ]);
   }
 
@@ -164,7 +219,7 @@ export function canUseDoubleMove(state: GameState): boolean {
   if (!state.config.doubleMove) {
     return false;
   }
-  return !state.powers.doubleMoveUsed[state.current];
+  return !state.powers.doubleMove[state.current];
 }
 
 export function isDoubleMoveLegal(state: GameState, move: Move): boolean {
@@ -175,7 +230,10 @@ export function isDoubleMoveFirstPlacementLegal(state: GameState, move: Move): b
   if (!state.config.doubleMove) {
     return false;
   }
-  if (state.powers.doubleMoveUsed[state.current]) {
+  if (state.powers.doubleMove[state.current]) {
+    return false;
+  }
+  if (typeof move.r !== 'number' || typeof move.c !== 'number') {
     return false;
   }
   const key = `${move.r}:${move.c}`;
@@ -192,6 +250,52 @@ export function isDoubleMoveFirstPlacementLegal(state: GameState, move: Move): b
     return false;
   }
   return true;
+}
+
+function resolveLaneShift(state: GameState, move: Move): Cell[][] | null {
+  if (move.power !== 'laneShift') {
+    return null;
+  }
+  if (!state.config.laneShift) {
+    return null;
+  }
+  const usage = state.powers.laneShift;
+  if (usage[state.current]) {
+    return null;
+  }
+  const shift = move.shift;
+  if (!shift) {
+    return null;
+  }
+  const { axis, index, direction } = shift;
+  if (direction !== 1 && direction !== -1) {
+    return null;
+  }
+  if (axis !== 'row' && axis !== 'column') {
+    return null;
+  }
+  const n = state.board.length;
+  if (index < 0 || index >= n) {
+    return null;
+  }
+  const board = cloneBoard(state.board);
+  if (axis === 'row') {
+    shiftRowInPlace(board, index, direction);
+  } else {
+    shiftColumnInPlace(board, index, direction);
+  }
+  return board;
+}
+
+export function canUseLaneShift(state: GameState): boolean {
+  if (!state.config.laneShift) {
+    return false;
+  }
+  return !state.powers.laneShift[state.current];
+}
+
+export function isLaneShiftLegal(state: GameState, move: Move): boolean {
+  return resolveLaneShift(state, move) !== null;
 }
 
 export function nextPlayer(p: Player): Player {
@@ -220,15 +324,13 @@ export function initState(config: VariantConfig): GameState {
     config,
     moves: [],
     winner: null,
-    powers: {
-      doubleMoveUsed: { X: false, O: false },
-    },
+    powers: createInitialPowerUsage(),
   };
 }
 
 export function legalMoves(state: GameState): Move[] {
   // For now, support placements on empty cells only. Powers/constraints are TODO.
-  return emptyCells(state.board).filter((m) => state.board[m.r][m.c] === null);
+  return emptyCells(state.board);
 }
 
 export function applyMove(state: GameState, move: Move): GameState {
@@ -252,17 +354,35 @@ export function applyMove(state: GameState, move: Move): GameState {
       moves: [...state.moves, storedMove],
       current: nextPlayer(player),
       lastMove: storedMove,
-      powers: {
-        ...state.powers,
-        doubleMoveUsed: {
-          ...state.powers.doubleMoveUsed,
-          [player]: true,
-        },
-      },
+      powers: markPowerUsed(state.powers, 'doubleMove', player),
+    };
+  }
+
+  if (move.power === 'laneShift') {
+    const board = resolveLaneShift(state, move);
+    if (!board || !move.shift) {
+      throw new Error('Illegal move');
+    }
+    const player = state.current;
+    const storedMove: Move = {
+      power: 'laneShift',
+      shift: { ...move.shift },
+      player,
+    };
+    return {
+      ...state,
+      board,
+      moves: [...state.moves, storedMove],
+      current: nextPlayer(player),
+      lastMove: storedMove,
+      powers: markPowerUsed(state.powers, 'laneShift', player),
     };
   }
 
   const { r, c } = move;
+  if (typeof r !== 'number' || typeof c !== 'number') {
+    throw new Error('Illegal move');
+  }
   const n = state.board.length;
   if (!inBounds(n, r, c) || state.board[r][c] !== null) throw new Error('Illegal move');
   const { gravity } = state.config;

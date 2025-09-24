@@ -8,6 +8,8 @@ export {
   canUseDoubleMove,
   isDoubleMoveLegal,
   isDoubleMoveFirstPlacementLegal,
+  canUseLaneShift,
+  isLaneShiftLegal,
 } from './board.js';
 export { bestMove } from './ai/minimax.js';
 export { evaluate } from './ai/heuristics.js';

@@ -4,7 +4,7 @@ import type { Difficulty } from '@ttt/engine';
 import { getSnapshot, type GameSetup } from '~/state/game-store';
 
 type VariantKey = 'gravity' | 'wrap' | 'randomBlocks' | 'misere';
-type PowerKey = 'doubleMovePower';
+type PowerKey = 'doubleMovePower' | 'laneShiftPower';
 type BoardSegment = {
   size: 3 | 4 | 5 | 6;
   label: string;
@@ -86,6 +86,7 @@ export class HomeViewModel extends Observable {
     this.set('randomBlocks', setup.randomBlocks);
     this.set('misere', setup.misere);
     this.set('doubleMovePower', setup.doubleMovePower);
+    this.set('laneShiftPower', setup.laneShiftPower);
 
     this.set('winLengthOptions', [] as WinLengthOptionVm[]);
     this.set('otpOptions', [] as PowerOptionVm[]);
@@ -197,9 +198,17 @@ export class HomeViewModel extends Observable {
       {
         key: 'doubleMovePower',
         title: 'Double Move',
-        description: 'Place two marks on the same turn.',
+        description: 'Place two marks on one turn.',
         icon: '⚡',
         active: !!this.get('doubleMovePower'),
+        disabled: false,
+      },
+      {
+        key: 'laneShiftPower',
+        title: 'Lane Shift',
+        description: 'Shift a lane by one cell cyclically.',
+        icon: '🔁',
+        active: !!this.get('laneShiftPower'),
         disabled: false,
       },
     ];
@@ -218,6 +227,7 @@ export class HomeViewModel extends Observable {
       wrap: !!this.get('wrap'),
       misere: !!this.get('misere'),
       randomBlocks: !!this.get('randomBlocks'),
+      laneShiftPower: !!this.get('laneShiftPower'),
       doubleMovePower: !!this.get('doubleMovePower'),
       difficulty: difficultyMeta?.key ?? 'balanced',
       vsAi: true,

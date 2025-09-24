@@ -1,7 +1,8 @@
-import { AbsoluteLayout, CoreTypes, Frame, Label, NavigatedData, Observable, Page } from '@nativescript/core';
+import { AbsoluteLayout, CoreTypes, Dialogs, EventData, Frame, Label, NavigatedData, Observable, Page } from '@nativescript/core';
 import type { GestureEventData } from '@nativescript/core';
 import {
   canUseDoubleMove,
+  canUseLaneShift,
   isDoubleMoveFirstPlacementLegal,
   isDoubleMoveLegal,
   legalMoves,
@@ -40,9 +41,21 @@ const pendingDoubleMove: PendingDoubleMove = {
   firstSelection: null,
 };
 
+interface PendingLaneShift {
+  armed: boolean;
+}
+
+const pendingLaneShift: PendingLaneShift = {
+  armed: false,
+};
+
 function resetPendingDoubleMove() {
   pendingDoubleMove.armed = false;
   pendingDoubleMove.firstSelection = null;
+}
+
+function resetPendingLaneShift() {
+  pendingLaneShift.armed = false;
 }
 
 function setPendingFirstSelection(cell: { r: number; c: number } | null) {
@@ -71,10 +84,25 @@ function canPlayerArmDoubleMove(snapshot: GameSnapshot): boolean {
   return canUseDoubleMove(game);
 }
 
+function canPlayerArmLaneShift(snapshot: GameSnapshot): boolean {
+  const { game, busy } = snapshot;
+  if (!game || busy || game.winner) {
+    return false;
+  }
+  if (game.current !== 'X') {
+    return false;
+  }
+  if (!game.config.laneShift) {
+    return false;
+  }
+  return canUseLaneShift(game);
+}
+
 export function onNavigatingTo(args: NavigatedData) {
   const page = args.object as Page;
   currentPage = page;
   resetPendingDoubleMove();
+  resetPendingLaneShift();
   viewModel = viewModel ?? createViewModel();
   page.bindingContext = viewModel;
 
@@ -92,6 +120,7 @@ export function onNavigatingFrom() {
   unsubscribe = null;
   stopReplay();
   clearConfetti(currentPage);
+  resetPendingLaneShift();
   resetPendingDoubleMove();
   currentPage = null;
 }
@@ -102,6 +131,10 @@ export function onCellTap(args: GestureEventData) {
     return;
   }
   const snapshot = getSnapshot();
+  if (pendingLaneShift.armed) {
+    void handleLaneShiftTap(cell, snapshot);
+    return;
+  }
   if (pendingDoubleMove.armed) {
     handleDoubleMoveTap(cell, snapshot);
     return;
@@ -117,7 +150,7 @@ function handleDoubleMoveTap(cell: BoardCellVM, snapshot: GameSnapshot) {
     return;
   }
 
-  const usableNow = canPlayerArmDoubleMove(snapshot) && !game.powers.doubleMoveUsed.X;
+  const usableNow = canPlayerArmDoubleMove(snapshot) && !game.powers.doubleMove.X;
   if (!usableNow) {
     resetPendingDoubleMove();
     updateViewModel(viewModel, snapshot);
@@ -158,6 +191,65 @@ function handleDoubleMoveTap(cell: BoardCellVM, snapshot: GameSnapshot) {
   updateViewModel(viewModel, updated);
 }
 
+async function handleLaneShiftTap(cell: BoardCellVM, snapshot: GameSnapshot) {
+  if (!pendingLaneShift.armed) {
+    return;
+  }
+  const { game } = snapshot;
+  if (!viewModel || !game) {
+    resetPendingLaneShift();
+    if (viewModel) updateViewModel(viewModel, snapshot);
+    return;
+  }
+
+  const usableNow = canPlayerArmLaneShift(snapshot) && !game.powers.laneShift.X;
+  if (!usableNow) {
+    resetPendingLaneShift();
+    updateViewModel(viewModel, snapshot);
+    return;
+  }
+
+  const options = [
+    { label: '⬅️ Shift row left', axis: 'row' as const, direction: -1 as const },
+    { label: '➡️ Shift row right', axis: 'row' as const, direction: 1 as const },
+    { label: '⬆️ Shift column up', axis: 'column' as const, direction: -1 as const },
+    { label: '⬇️ Shift column down', axis: 'column' as const, direction: 1 as const },
+  ];
+
+  const choiceLabel = await Dialogs.action({
+    title: '🔁 Choose Lane Shift',
+    cancelButtonText: 'Cancel',
+    actions: options.map((o) => o.label),
+  });
+
+  const choice = options.find((o) => o.label === choiceLabel);
+  if (!choice) {
+    return;
+  }
+
+  const index = choice.axis === 'row' ? cell.r : cell.c;
+  const move: Move = {
+    power: 'laneShift',
+    shift: {
+      axis: choice.axis,
+      index,
+      direction: choice.direction,
+    },
+  };
+
+  const beforeMoves = game.moves.length;
+  playerMove(move);
+  const updated = getSnapshot();
+  const moved = updated.game && updated.game.moves.length > beforeMoves;
+  if (!moved) {
+    updateViewModel(viewModel, updated);
+    return;
+  }
+
+  resetPendingLaneShift();
+  updateViewModel(viewModel, updated);
+}
+
 export function onBack() {
   const frame = Frame.topmost();
   if (frame.canGoBack()) {
@@ -191,29 +283,57 @@ export function onReplay() {
   startReplay(viewModel, game);
 }
 
-export function onToggleDoubleMove() {
+export function onOtpPowerAction(args: EventData) {
   if (!viewModel) {
     return;
   }
+  const target = args.object as any;
+  const context = target?.bindingContext as { id: 'doubleMove' | 'laneShift'; armed: boolean; buttonEnabled?: boolean } | undefined;
+  if (!context) {
+    return;
+  }
+  if (!context.armed && context.buttonEnabled === false) {
+    return;
+  }
   const snapshot = getSnapshot();
-  if (pendingDoubleMove.armed) {
-    resetPendingDoubleMove();
+
+  if (context.id === 'doubleMove') {
+    if (pendingDoubleMove.armed) {
+      resetPendingDoubleMove();
+      updateViewModel(viewModel, snapshot);
+      return;
+    }
+    if (!canPlayerArmDoubleMove(snapshot)) {
+      return;
+    }
+    resetPendingLaneShift();
+    pendingDoubleMove.armed = true;
+    setPendingFirstSelection(null);
     updateViewModel(viewModel, snapshot);
     return;
   }
-  if (!canPlayerArmDoubleMove(snapshot)) {
-    return;
+
+  if (context.id === 'laneShift') {
+    if (pendingLaneShift.armed) {
+      resetPendingLaneShift();
+      updateViewModel(viewModel, snapshot);
+      return;
+    }
+    if (!canPlayerArmLaneShift(snapshot)) {
+      return;
+    }
+    resetPendingDoubleMove();
+    setPendingFirstSelection(null);
+    pendingLaneShift.armed = true;
+    updateViewModel(viewModel, snapshot);
   }
-  pendingDoubleMove.armed = true;
-  setPendingFirstSelection(null);
-  updateViewModel(viewModel, snapshot);
 }
 
 function createViewModel() {
   const vm = new Observable();
   vm.set('statusText', 'Preparing game...');
-  vm.set('variantSummary', '');
-  vm.set('otpSummary', '');
+  vm.set('variantSummary', [] as string[]);
+  vm.set('otpSummary', [] as string[]);
   vm.set('difficultyLabel', '');
   vm.set('boardRows', [] as BoardRowVM[]);
   vm.set('boardClass', 'board board-3');
@@ -223,8 +343,8 @@ function createViewModel() {
   vm.set('resultVisible', false);
   vm.set('resultTitle', '');
   vm.set('resultSummary', '');
-  vm.set('resultVariantSummary', '');
-  vm.set('resultOtpSummary', '');
+  vm.set('resultVariantSummary', [] as string[]);
+  vm.set('resultOtpSummary', [] as string[]);
   vm.set('resultDifficultyLabel', '');
   vm.set('confettiVisible', false);
   vm.set('replayActive', false);
@@ -235,10 +355,7 @@ function createViewModel() {
   vm.set('resultWinLengthLabel', '');
   vm.set('replayLogs', [] as { text: string }[]);
   vm.set('replayLogsVisible', false);
-  vm.set('doubleMoveEnabled', false);
-  vm.set('doubleMoveAvailable', false);
-  vm.set('doubleMoveUsed', false);
-  vm.set('doubleMoveArmed', false);
+  vm.set('otpPowerItems', [] as any[]);
   return vm;
 }
 function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
@@ -248,20 +365,20 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
   vm.set('aiThinkingVisible', aiThinking);
   vm.set('aiThinkingMessage', aiThinking ? 'AI is thinking...' : '');
 
-  syncDoubleMoveUi(vm, snapshot);
+  syncOtpPowerUi(vm, snapshot);
 
   if (!game) {
     stopReplay();
     vm.set('boardRows', []);
-    vm.set('variantSummary', '');
+    vm.set('variantSummary', [] as string[]);
     vm.set('otpSummary', '');
     vm.set('difficultyLabel', '');
     vm.set('statusText', 'Head back to the home screen to start a new match.');
     vm.set('resultVisible', false);
     vm.set('resultTitle', '');
     vm.set('resultSummary', '');
-    vm.set('resultVariantSummary', '');
-    vm.set('resultOtpSummary', '');
+    vm.set('resultVariantSummary', [] as string[]);
+    vm.set('resultOtpSummary', [] as string[]);
     vm.set('resultDifficultyLabel', '');
     vm.set('resultWinLengthLabel', '');
     vm.set('confettiVisible', false);
@@ -312,8 +429,8 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     stopReplay();
     vm.set('resultTitle', '');
     vm.set('resultSummary', '');
-    vm.set('resultVariantSummary', '');
-    vm.set('resultOtpSummary', '');
+    vm.set('resultVariantSummary', [] as string[]);
+    vm.set('resultOtpSummary', [] as string[]);
     vm.set('resultDifficultyLabel', '');
     vm.set('resultWinLengthLabel', '');
     vm.set('confettiVisible', false);
@@ -321,39 +438,77 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
   }
 }
 
-function syncDoubleMoveUi(vm: Observable, snapshot: GameSnapshot) {
+function syncOtpPowerUi(vm: Observable, snapshot: GameSnapshot) {
   const { game } = snapshot;
   if (!game) {
-    vm.set('doubleMoveEnabled', false);
-    vm.set('doubleMoveAvailable', false);
-    vm.set('doubleMoveUsed', false);
-    vm.set('doubleMoveArmed', false);
     resetPendingDoubleMove();
+    resetPendingLaneShift();
+    vm.set('otpPowerItems', []);
     return;
   }
 
-  const enabled = !!game.config.doubleMove;
-  const used = enabled ? game.powers.doubleMoveUsed.X : false;
-  const availableThisTurn = enabled && canPlayerArmDoubleMove(snapshot);
+  const items: Array<{
+    id: 'doubleMove' | 'laneShift';
+    title: string;
+    description: string;
+    buttonText: string;
+    buttonEnabled: boolean;
+    armed: boolean;
+  }> = [];
 
-  if ((!availableThisTurn || used) && pendingDoubleMove.armed) {
+  if (game.config.doubleMove) {
+    const used = game.powers.doubleMove.X;
+    const available = canPlayerArmDoubleMove(snapshot);
+    if ((!available || used) && pendingDoubleMove.armed) {
+      resetPendingDoubleMove();
+    } else if (!available) {
+      setPendingFirstSelection(null);
+    }
+    const armed = pendingDoubleMove.armed;
+    items.push({
+      id: 'doubleMove',
+      title: '⚡ Double Move',
+      description: 'Place two marks on one turn.',
+      buttonText: used ? 'Used' : armed ? 'Cancel' : 'Invoke',
+      buttonEnabled: armed || (!used && available),
+      armed,
+    });
+  } else {
     resetPendingDoubleMove();
-  } else if (!availableThisTurn) {
-    setPendingFirstSelection(null);
   }
 
-  vm.set('doubleMoveEnabled', enabled);
-  vm.set('doubleMoveAvailable', availableThisTurn && !used);
-  vm.set('doubleMoveUsed', used);
-  vm.set('doubleMoveArmed', pendingDoubleMove.armed && availableThisTurn && !used);
+  if (game.config.laneShift) {
+    const usage = game.powers.laneShift;
+    const used = usage ? usage.X : false;
+    const available = canPlayerArmLaneShift(snapshot);
+    if ((!available || used) && pendingLaneShift.armed) {
+      resetPendingLaneShift();
+    }
+    const armed = pendingLaneShift.armed;
+    items.push({
+      id: 'laneShift',
+      title: '🔁 Lane Shift',
+      description: 'Shift a row or column by one cell.',
+      buttonText: used ? 'Used' : armed ? 'Cancel' : 'Invoke',
+      buttonEnabled: armed || (!used && available),
+      armed,
+    });
+  } else {
+    resetPendingLaneShift();
+  }
+
+  vm.set('otpPowerItems', items);
 }
 
 function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<string>): BoardRowVM[] {
   const isHumanTurn = !busy && !game.winner && game.current === 'X';
-  const legalMovesList = isHumanTurn ? legalMoves(game) : [];
+  const laneShiftAvailable = isHumanTurn && game.config.laneShift && canUseLaneShift(game);
+  const laneShiftArmed = laneShiftAvailable && pendingLaneShift.armed;
+  const legalMovesList = isHumanTurn && !laneShiftArmed ? legalMoves(game) : [];
   const legal = new Set<string>(legalMovesList.map((m) => `${m.r}:${m.c}`));
 
-  const powerArmed = pendingDoubleMove.armed && isHumanTurn && !game.winner;
+  const doubleMoveEligible = isHumanTurn && !game.winner && game.config.doubleMove && !laneShiftArmed;
+  const powerArmed = doubleMoveEligible && pendingDoubleMove.armed;
   const powerFirst = powerArmed ? pendingDoubleMove.firstSelection : null;
   const powerFirstKey = powerFirst ? `${powerFirst.r}:${powerFirst.c}` : null;
   let powerFirstChoices: Set<string> | null = null;
@@ -402,7 +557,7 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
       const lastMove = game.lastMove;
       if (
         lastMove &&
-        ((lastMove.r === r && lastMove.c === c) ||
+        ((typeof lastMove.r === 'number' && typeof lastMove.c === 'number' && lastMove.r === r && lastMove.c === c) ||
           (lastMove.power === 'doubleMove' && lastMove.extra && lastMove.extra.r === r && lastMove.extra.c === c))
       ) {
         classes.push('cell-last');
@@ -412,7 +567,7 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
         classes.push('cell-winning');
       }
 
-      let interactive = isHumanTurn && legal.has(key) && cell === null;
+      let interactive = !laneShiftArmed && isHumanTurn && legal.has(key) && cell === null;
       if (powerArmed) {
         if (!powerFirst) {
           const allowedFirst = powerFirstChoices?.has(key) ?? false;
@@ -424,6 +579,10 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
           interactive = interactive && allowedSecond;
         }
       }
+      if (laneShiftArmed) {
+        interactive = true;
+      }
+
       if (interactive) {
         classes.push('cell-legal');
       }
@@ -438,6 +597,10 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
         }
       }
 
+      if (laneShiftArmed) {
+        classes.push('cell-power-lane');
+      }
+
       return {
         r,
         c,
@@ -449,8 +612,10 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
     }),
   }));
 }
-
 function buildStatusText(game: GameState, busy: boolean): string {
+  if (game.config.laneShift && pendingLaneShift.armed && game.current === 'X' && !game.winner) {
+    return 'Lane Shift armed. Tap a cell on the lane.';
+  }
   if (game.config.doubleMove && pendingDoubleMove.armed && game.current === 'X' && !game.winner) {
     if (pendingDoubleMove.firstSelection) {
       return 'Double Move armed. Pick the second cell.';
@@ -527,9 +692,15 @@ function runReplayStep(vm: Observable, game: GameState, winningSet: Set<string> 
   for (let i = 0; i < limit; i++) {
     const move = moves[i];
     const player: Player = move.player ?? (i % 2 === 0 ? 'X' : 'O');
-    board[move.r][move.c] = player;
-    if (move.power === 'doubleMove' && move.extra) {
-      board[move.extra.r][move.extra.c] = player;
+    if (move.power === 'laneShift' && move.shift) {
+      applyReplayLaneShift(board, move.shift);
+      continue;
+    }
+    if (typeof move.r === 'number' && typeof move.c === 'number') {
+      board[move.r][move.c] = player;
+      if (move.power === 'doubleMove' && move.extra) {
+        board[move.extra.r][move.extra.c] = player;
+      }
     }
   }
 
@@ -565,6 +736,28 @@ function runReplayStep(vm: Observable, game: GameState, winningSet: Set<string> 
   replayTimer = setTimeout(() => runReplayStep(vm, game, winningSet, step + 1), delay);
 }
 
+function applyReplayLaneShift(board: Array<Array<Player | 'B' | null>>, shift: { axis: 'row' | 'column'; index: number; direction: 1 | -1 }) {
+  const n = board.length;
+  if (shift.axis === 'row') {
+    const row = board[shift.index].slice();
+    const next: Array<Player | 'B' | null> = Array(n);
+    for (let c = 0; c < n; c++) {
+      const source = (c - shift.direction + n) % n;
+      next[c] = row[source];
+    }
+    board[shift.index] = next;
+    return;
+  }
+  const next: Array<Player | 'B' | null> = Array(n);
+  for (let r = 0; r < n; r++) {
+    const source = (r - shift.direction + n) % n;
+    next[r] = board[source][shift.index];
+  }
+  for (let r = 0; r < n; r++) {
+    board[r][shift.index] = next[r];
+  }
+}
+
 function appendReplayLog(vm: Observable, text: string) {
   const existing = (vm.get('replayLogs') as { text: string }[] | undefined) ?? [];
   const next = [...existing, { text }];
@@ -594,7 +787,18 @@ function formatReplayEntry(move: Move, player: Player, step: number, total: numb
     const second = { r: move.r, c: move.c };
     return `${prefix} Double Move -> (${first.r + 1}, ${first.c + 1}) then (${second.r + 1}, ${second.c + 1})`;
   }
-  return `${prefix} -> (${move.r + 1}, ${move.c + 1})`;
+  if (move.power === 'laneShift' && move.shift) {
+    const { axis, index, direction } = move.shift;
+    const axisLabel = axis === 'row' ? 'Row' : 'Column';
+    const dirLabel = axis === 'row'
+      ? direction === 1 ? 'right' : 'left'
+      : direction === 1 ? 'down' : 'up';
+    return `${prefix} Lane Shift -> ${axisLabel} ${index + 1} ${dirLabel}`;
+  }
+  if (typeof move.r === 'number' && typeof move.c === 'number') {
+    return `${prefix} -> (${move.r + 1}, ${move.c + 1})`;
+  }
+  return `${prefix} -> (n/a)`;
 }
 function findWinningLine(game: GameState): { r: number; c: number }[] | null {
   if (!game.winner || game.winner === 'Draw') {
@@ -797,20 +1001,31 @@ function formatVariantSummary(game: GameState): string[] {
 function formatOtpSummary(game: GameState): string[] {
   const otp = [];
   if (game.config.doubleMove) {
-    const { doubleMoveUsed } = game.powers;
+    const usage = game.powers.doubleMove;
     let status = 'Unused so far.';
-    if (doubleMoveUsed.X && doubleMoveUsed.O) {
+    if (usage.X && usage.O) {
       status = 'Both players used it.';
-    } else if (doubleMoveUsed.X) {
+    } else if (usage.X) {
       status = 'You already used it.';
-    } else if (doubleMoveUsed.O) {
+    } else if (usage.O) {
       status = 'AI already used it.';
     }
     otp.push('⚡ Double Move - Place two marks once. ' + status);
   }
+  if (game.config.laneShift) {
+    const usage = game.powers.laneShift;
+    let status = 'Unused so far.';
+    if (usage.X && usage.O) {
+      status = 'Both players used it.';
+    } else if (usage.X) {
+      status = 'You already used it.';
+    } else if (usage.O) {
+      status = 'AI already used it.';
+    }
+    otp.push('🔀 Lane Shift - Shift a lane once. ' + status);
+  }
   return otp;
 }
-
 function formatDifficulty(value: GameSnapshot['settings']['difficulty']): string {
   switch (value) {
     case 'chill':

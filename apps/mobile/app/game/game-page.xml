@@ -61,16 +61,21 @@
                 <Label text="{{ $value }}" />
             </Repeater.itemTemplate>
           </Repeater>
-          <FlexboxLayout class="otp-section" flexDirection="row" alignItems="center" justifyContent="center" visibility="{{ doubleMoveEnabled ? 'visible' : 'collapse' }}">
-            <StackLayout class="otp-card double-move" visibility="{{ doubleMoveEnabled ? 'visible' : 'collapse' }}">
-              <Label class="otp-title" text="Double Move" />
-              <Label class="otp-description" text="Place two non-adjacent marks on a single turn." textWrap="true" />
-              <Button class="otp-button"
-                      text="{{ doubleMoveUsed ? 'Double Move Used' : (doubleMoveArmed ? 'Cancel Double Move' : 'Invoke ⚡') }}"
-                      tap="onToggleDoubleMove"
-                      isEnabled="{{ (doubleMoveAvailable || doubleMoveArmed) && !doubleMoveUsed }}" />
-            </StackLayout>
-          </FlexboxLayout>
+          <Repeater items="{{ otpPowerItems }}" visibility="{{ otpPowerItems.length > 0 ? 'visible' : 'collapse' }}">
+            <Repeater.itemsLayout>
+                <FlexboxLayout class="otp-wrapper" flexDirection="row" alignItems="center" justifyContent="center"></FlexboxLayout>
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+              <StackLayout class="{{`otp-section ${id}`}}">
+                <Label class="otp-title" text="{{ title }}" />
+                <Label class="otp-description" text="{{ description }}" textWrap="true" />
+                <Button class="{{ armed ? 'otp-button armed' : 'otp-button' }}"
+                        text="{{ buttonText }}"
+                        tap="onOtpPowerAction"
+                        isEnabled="{{ buttonEnabled }}" />
+              </StackLayout>
+            </Repeater.itemTemplate>
+          </Repeater>
           <FlexboxLayout class="turn-banner" flexDirection="row" alignItems="center" justifyContent="center">
             <ActivityIndicator class="thinking-spinner" busy="{{ aiThinkingVisible }}" visibility="{{ aiThinkingVisible ? 'visible' : 'collapse' }}" />
             <Label class="status" text="{{ aiThinkingMessage }}" visibility="{{ aiThinkingVisible ? 'visible' : 'collapse' }}" />
@@ -163,8 +168,8 @@
         </ScrollView>
 
         <StackLayout class="game-actions" padding="10" spacing="12" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
-          <Label text="Need a new twist?" horizontalAlignment="center" />
-          <Button text="⏏️ Game Setup" class="cta-secondary" tap="onBack" />
+          <Button text="🔁 Rematch" tap="onRematch" />
+          <Button text="⏏️ Game Setup" tap="onBack" />
         </StackLayout>
       </StackLayout>
     </ScrollView>
