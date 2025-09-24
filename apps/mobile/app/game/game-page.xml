@@ -38,8 +38,20 @@
               <Span text="{{ winLengthLabel }}" />
             </FormattedString>
           </Label>
-          <HtmlView html="{{ variantSummary }}" />
-          <Label text="{{ hintText }}" class="meta" textWrap="true" visibility="{{ hintText ? 'visible' : 'collapse' }}" />
+          <Label textWrap="true">
+            <FormattedString>
+              <Span text="Rules: " fontWeight="bold" />
+              <Span text="{{ variantSummary.length > 0 ? 'Variants' : 'Classic' }}" />
+            </FormattedString>
+          </Label>
+          <Repeater items="{{ variantSummary }}" visibility="{{ variantSummary.length > 0 ? 'visible' : 'collapse' }}">
+            <Repeater.itemsLayout>
+                <StackLayout />
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+                <Label text="{{ $value }}" />
+            </Repeater.itemTemplate>
+          </Repeater>
         </StackLayout>
 
         <StackLayout class="card result-card" padding="10" spacing="12" visibility="{{ resultVisible ? 'visible' : 'collapse' }}">
@@ -57,7 +69,20 @@
               <Span text="{{ resultWinLengthLabel }}" />
             </FormattedString>
           </Label>
-          <HtmlView html="{{ resultVariantSummary }}" />
+          <Label textWrap="true">
+            <FormattedString>
+              <Span text="Rules: " fontWeight="bold" />
+              <Span text="{{ resultVariantSummary.length > 0 ? 'Variants' : 'Classic' }}" />
+            </FormattedString>
+          </Label>
+          <Repeater items="{{ resultVariantSummary }}" visibility="{{ resultVariantSummary.length > 0 ? 'visible' : 'collapse' }}">
+            <Repeater.itemsLayout>
+                <StackLayout />
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+                <Label text="{{ $value }}" />
+            </Repeater.itemTemplate>
+          </Repeater>
         </StackLayout>
 
         <FlexboxLayout class="board-shell" justifyContent="center">

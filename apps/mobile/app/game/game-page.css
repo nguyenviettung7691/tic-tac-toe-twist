@@ -32,6 +32,7 @@
 .thinking-spinner {
   margin-right: 8;
   color: var(--color-deep-blue);
+  width: 25; height: 25;
 }
 
 .board-shell {
@@ -139,12 +140,13 @@
   color: var(--color-ink);
 }
 
-.variant-chip {
-  background-color: #fff;
-  border-width: 1;
-  border-radius: 15;
-  border-color: var(--color-outline);
-  padding: 0 10;
+.variant-list {
+  margin: 0;
+  padding: 0;
+}
+.variant-list div {
+  margin: 0;
+  padding: 0;
 }
 
 .game-actions {

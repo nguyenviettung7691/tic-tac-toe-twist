@@ -35,7 +35,7 @@
       </StackLayout>
 
       <StackLayout class="section">
-        <Label class="slider-label" text="Win length ❓" tap="onWinLengthInfo" />
+        <Label class="slider-label" text="Win condition ❓" tap="onWinLengthInfo" />
         <FlexboxLayout class="winlength-control" justifyContent="center">
           <Repeater items="{{ winLengthOptions }}">
             <Repeater.itemsLayout>
@@ -68,7 +68,24 @@
       </StackLayout>
 
       <StackLayout class="section">
-        <Label class="section-heading" text="Difficulty" />
+        <Label class="section-heading" text="Opponent❓" tap="onOpponentInfo" />
+        <FlexboxLayout class="opponent-group" justifyContent="center">
+          <Repeater items="{{ opponentOptions }}">
+            <Repeater.itemsLayout>
+              <FlexboxLayout style="width: 100%"/>
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+              <StackLayout class="{{ `opponent-chip${active ? ' active' : ''}${disabled ? ' disabled' : ''}` }}">
+                <Label horizontalAlignment="center" class="opponent-icon" text="{{ icon }}" />
+                <Label horizontalAlignment="center" class="opponent-title" text="{{ title }}" />
+              </StackLayout>
+            </Repeater.itemTemplate>
+          </Repeater>
+        </FlexboxLayout>
+      </StackLayout>
+
+      <StackLayout class="section">
+        <Label class="section-subtitle" text="AI Difficulty" />
         <FlexboxLayout class="difficulty-group" justifyContent="center">
           <Repeater items="{{ difficultyOptions }}">
             <Repeater.itemsLayout>

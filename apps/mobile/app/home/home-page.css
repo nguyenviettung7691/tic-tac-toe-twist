@@ -79,7 +79,7 @@
   color: rgba(31, 44, 63, 0.75);
 }
 .variant-row {
-  padding: 0 10;
+  padding: 2 10;
   margin-bottom: 5;
   border-radius: 12;
   border-width: 1;
@@ -128,28 +128,50 @@
   background-color: #257bde;
 }
 
+.opponent-group {
+  border-width: 2;
+  border-color: var(--color-outline);
+  border-radius: 20;
+}
+.opponent-chip {
+  flex: 1;
+  border-radius: 18;
+}
+.opponent-chip.active {
+  background-color: #e6f1ff;
+}
+.opponent-chip.disabled {
+  opacity: 0.5;
+}
+.opponent-title {
+  font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
+  font-size: 16;
+  font-weight: 600;
+  color: var(--color-ink);
+}
+.opponent-icon {
+  margin-top: 2;
+  text-align: center;
+}
+
 .difficulty-group {
   border-width: 2;
   border-color: var(--color-outline);
   border-radius: 20;
 }
-
 .difficulty-chip {
   flex: 1;
   border-radius: 18;
 }
-
 .difficulty-chip.active {
   background-color: #e6f1ff;
 }
-
 .difficulty-title {
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
   font-size: 16;
   font-weight: 600;
   color: var(--color-ink);
 }
-
 .difficulty-caption {
   margin-top: 2;
   text-align: center;

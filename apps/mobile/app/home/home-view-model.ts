@@ -77,6 +77,10 @@ export class HomeViewModel extends Observable {
     this.set('misere', setup.misere);
 
     this.set('winLengthOptions', [] as WinLengthOptionVm[]);
+    this.set('opponentOptions', [
+      { key: 'human', title: 'Human', icon: '🧑‍🤝‍🧑', active: false, disabled: true },
+      { key: 'ai', title: 'AI', icon: '🤖', active: true },
+    ]);
 
     this.refreshBoardOptions();
     this.refreshDifficultyOptions();
