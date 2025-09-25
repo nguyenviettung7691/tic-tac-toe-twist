@@ -77,6 +77,7 @@ function createInitialPowerUsage(): PowerUsage {
   return {
     doubleMove: { X: false, O: false },
     laneShift: { X: false, O: false },
+    bomb: { X: false, O: false },
   };
 }
 
@@ -104,10 +105,11 @@ function shiftColumnInPlace(board: Cell[][], columnIndex: number, direction: 1 |
 }
 
 function markPowerUsed(powers: PowerUsage, power: OneTimePowerId, player: Player): PowerUsage {
+  const usage = powers[power] ?? { X: false, O: false };
   return {
     ...powers,
     [power]: {
-      ...powers[power],
+      ...usage,
       [player]: true,
     },
   };
@@ -287,6 +289,49 @@ function resolveLaneShift(state: GameState, move: Move): Cell[][] | null {
   return board;
 }
 
+function resolveBomb(state: GameState, move: Move): { board: Cell[][]; target: MovePlacement } | null {
+  if (move.power !== 'bomb') {
+    return null;
+  }
+  if (!state.config.bomb) {
+    return null;
+  }
+  const usage = state.powers.bomb;
+  if (!usage || usage[state.current]) {
+    return null;
+  }
+  if (typeof move.r !== 'number' || typeof move.c !== 'number') {
+    return null;
+  }
+  const { r, c } = move;
+  const n = state.board.length;
+  if (!inBounds(n, r, c)) {
+    return null;
+  }
+  const cell = state.board[r][c];
+  if (cell === 'B' || cell === 'F') {
+    return null;
+  }
+  const board = cloneBoard(state.board);
+  board[r][c] = 'F';
+  return { board, target: { r, c } };
+}
+
+export function canUseBomb(state: GameState): boolean {
+  if (!state.config.bomb) {
+    return false;
+  }
+  const usage = state.powers.bomb;
+  if (!usage) {
+    return true;
+  }
+  return !usage[state.current];
+}
+
+export function isBombLegal(state: GameState, move: Move): boolean {
+  return resolveBomb(state, move) !== null;
+}
+
 export function canUseLaneShift(state: GameState): boolean {
   if (!state.config.laneShift) {
     return false;
@@ -355,6 +400,28 @@ export function applyMove(state: GameState, move: Move): GameState {
       current: nextPlayer(player),
       lastMove: storedMove,
       powers: markPowerUsed(state.powers, 'doubleMove', player),
+    };
+  }
+
+  if (move.power === 'bomb') {
+    const resolved = resolveBomb(state, move);
+    if (!resolved) {
+      throw new Error('Illegal move');
+    }
+    const player = state.current;
+    const storedMove: Move = {
+      r: resolved.target.r,
+      c: resolved.target.c,
+      player,
+      power: 'bomb',
+    };
+    return {
+      ...state,
+      board: resolved.board,
+      moves: [...state.moves, storedMove],
+      current: nextPlayer(player),
+      lastMove: storedMove,
+      powers: markPowerUsed(state.powers, 'bomb', player),
     };
   }
 

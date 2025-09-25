@@ -8,6 +8,8 @@ export {
   canUseDoubleMove,
   isDoubleMoveLegal,
   isDoubleMoveFirstPlacementLegal,
+  canUseBomb,
+  isBombLegal,
   canUseLaneShift,
   isLaneShiftLegal,
 } from './board.js';

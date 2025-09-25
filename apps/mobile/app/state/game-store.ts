@@ -4,6 +4,7 @@ import {
   checkWinner,
   createGame,
   isDoubleMoveLegal,
+  isBombLegal,
   isLaneShiftLegal,
   legalMoves,
 } from '@ttt/engine';
@@ -20,6 +21,7 @@ export interface GameSetup {
   misere: boolean;
   laneShiftPower: boolean;
   doubleMovePower: boolean;
+  bombPower: boolean;
   difficulty: Difficulty;
   vsAi: boolean;
 }
@@ -42,6 +44,7 @@ const defaultSetup: GameSetup = {
   misere: false,
   laneShiftPower: false,
   doubleMovePower: false,
+  bombPower: false,
   difficulty: 'balanced',
   vsAi: true,
 };
@@ -142,6 +145,7 @@ function normalizeSetup(setup: GameSetup): GameSetup {
     misere,
     laneShiftPower: !!setup.laneShiftPower,
     doubleMovePower: !!setup.doubleMovePower,
+    bombPower: !!setup.bombPower,
   };
 }
 
@@ -198,6 +202,12 @@ function isMoveLegal(state: GameState, move: Move): boolean {
     }
     return isDoubleMoveLegal(state, move);
   }
+  if (move.power === 'bomb') {
+    if (!state.config.bomb) {
+      return false;
+    }
+    return isBombLegal(state, move);
+  }
   if (move.power === 'laneShift') {
     if (!state.config.laneShift) {
       return false;
@@ -222,6 +232,7 @@ function toVariantConfig(setup: GameSetup): VariantConfig {
     randomBlocks: setup.randomBlocks ? 3 : 0,
     laneShift: setup.laneShiftPower,
     doubleMove: setup.doubleMovePower,
+    bomb: setup.bombPower,
   };
 }
 

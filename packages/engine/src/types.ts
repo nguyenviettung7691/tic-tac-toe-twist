@@ -1,7 +1,7 @@
 export type Player = 'X' | 'O';
-export type Cell = Player | null | 'B'; // 'B' for blocked
+export type Cell = Player | null | 'B' | 'F'; // 'B' for blocked, 'F' for bombed
 
-export type OneTimePowerId = 'doubleMove' | 'laneShift';
+export type OneTimePowerId = 'doubleMove' | 'laneShift' | 'bomb';
 
 export interface LaneShift {
   axis: 'row' | 'column';
@@ -34,7 +34,7 @@ export interface VariantConfig {
   doubleMove?: boolean;
   laneShift?: boolean;
   allowRowColShift?: boolean;
-  allowBomb?: boolean;
+  bomb?: boolean;
 }
 
 export type PowerUsage = Record<OneTimePowerId, Record<Player, boolean>>;

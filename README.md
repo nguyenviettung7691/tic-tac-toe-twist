@@ -20,7 +20,7 @@ Players can perform a One-Time-Power instead of placing a mark (unless OTP state
 
 - Double Move: On the same turn, place 2 marks that are not in 1 cell space next to your other marks.
 - Lane Shift: Shift a selected row or column by one cell cyclically.
-- Bomb: Removes a single opponent mark.
+- Bomb: Make a single cell unplayable for both players and also destroy any existing mark on the cell.
 
 Chaos Mode: Each round randomly selects a random number of variants.
 

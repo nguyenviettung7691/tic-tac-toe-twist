@@ -46,7 +46,7 @@ export function onRulesInfo() {
 export function onOTPInfo(){
   Dialogs.alert({
     title: 'One-Time-Powers',
-    message: 'Players can perform a One-Time-Power in return for placing a mark on their turn:\n\nDouble Move - On the same turn, place 2 marks that are not in 1 cell space next to your other marks.\nLane Shift - Shift a selected row or column by one cell cyclically.\n\nAnimated guides coming soon for each power.',
+    message: 'Players can perform a One-Time-Power in return for placing a mark on their turn:\n\nDouble Move - On the same turn, place 2 marks that are not in 1 cell space next to your other marks.\nLane Shift - Shift a selected row or column by one cell cyclically.\nBomb - Destroy a chosen cell and render it unplayable for both players.\n\nAnimated guides coming soon for each power.',
     okButtonText: 'Close',
   });
 }

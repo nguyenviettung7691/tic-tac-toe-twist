@@ -4,7 +4,7 @@ import type { Difficulty } from '@ttt/engine';
 import { getSnapshot, type GameSetup } from '~/state/game-store';
 
 type VariantKey = 'gravity' | 'wrap' | 'randomBlocks' | 'misere';
-type PowerKey = 'doubleMovePower' | 'laneShiftPower';
+type PowerKey = 'doubleMovePower' | 'laneShiftPower' | 'bombPower';
 type BoardSegment = {
   size: 3 | 4 | 5 | 6;
   label: string;
@@ -87,6 +87,7 @@ export class HomeViewModel extends Observable {
     this.set('misere', setup.misere);
     this.set('doubleMovePower', setup.doubleMovePower);
     this.set('laneShiftPower', setup.laneShiftPower);
+    this.set('bombPower', setup.bombPower);
 
     this.set('winLengthOptions', [] as WinLengthOptionVm[]);
     this.set('otpOptions', [] as PowerOptionVm[]);
@@ -211,6 +212,14 @@ export class HomeViewModel extends Observable {
         active: !!this.get('laneShiftPower'),
         disabled: false,
       },
+      {
+        key: 'bombPower',
+        title: 'Bomb',
+        description: 'Destroy a cell and block it forever.',
+        icon: '🔥',
+        active: !!this.get('bombPower'),
+        disabled: false,
+      },
     ];
     this.set('otpOptions', powers);
   }
@@ -229,6 +238,7 @@ export class HomeViewModel extends Observable {
       randomBlocks: !!this.get('randomBlocks'),
       laneShiftPower: !!this.get('laneShiftPower'),
       doubleMovePower: !!this.get('doubleMovePower'),
+      bombPower: !!this.get('bombPower'),
       difficulty: difficultyMeta?.key ?? 'balanced',
       vsAi: true,
     };
