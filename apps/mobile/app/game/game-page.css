@@ -253,12 +253,18 @@
   background-color: #cfde25;
   color: var(--color-ink);
 }
+.otp-section.doubleMove .otp-button.armed {
+  animation: doubleMove 3s ease-in-out infinite;
+}
 .otp-section.laneShift {
   border-color: rgba(167, 37, 222, 0.28);
   background-color: rgba(248, 230, 255, 0.35);
 }
 .otp-section.laneShift .otp-button {
   background-color: #b925de;
+}
+.otp-section.laneShift .otp-button.armed {
+  animation: laneShift 3s ease-in-out infinite;
 }
 .otp-title {
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
@@ -273,18 +279,28 @@
 }
 .otp-button {
   border-radius: 999;
-  background-color: var(--color-deep-blue);
   color: #fff;
   font-family: 'Poppins', 'Sora', 'Avenir', sans-serif;
   font-size: 18;
   padding: 8 12;
   font-weight: 700;
 }
-.otp-button.armed {
-  background-color: rgba(37, 123, 222, 0.6);
-}
-
 .otp-button:disabled {
   background-color: rgba(37, 123, 222, 0.35);
   color: rgba(255, 255, 255, 0.7);
+}
+
+@keyframes doubleMove {
+  0%   { background-color: #cfde25; }
+  25%  { background-color: #eaff00; }
+  50%  { background-color: #cfde25; }
+  75%  { background-color: #b2bb4e; }
+  100% { background-color: #cfde25; }
+}
+@keyframes laneShift {
+  0%   { background-color: #b925de; }
+  25%  { background-color: #cc00ff; }
+  50%  { background-color: #b925de; }
+  75%  { background-color: #aa51c0; }
+  100% { background-color: #b925de; }
 }
