@@ -10,6 +10,7 @@ export const defaultConfig = (): VariantConfig => ({
   doubleMove: false,
   allowRowColShift: false,
   bomb: false,
+  chaosMode: false,
 });
 
 export function validateConfig(config: VariantConfig): { ok: true } | { ok: false; reason: string } {

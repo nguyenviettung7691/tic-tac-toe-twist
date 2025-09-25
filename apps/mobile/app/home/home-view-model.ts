@@ -88,6 +88,7 @@ export class HomeViewModel extends Observable {
     this.set('doubleMovePower', setup.doubleMovePower);
     this.set('laneShiftPower', setup.laneShiftPower);
     this.set('bombPower', setup.bombPower);
+    this.set('chaosMode', setup.chaosMode);
 
     this.set('winLengthOptions', [] as WinLengthOptionVm[]);
     this.set('otpOptions', [] as PowerOptionVm[]);
@@ -135,6 +136,12 @@ export class HomeViewModel extends Observable {
     const value = typeof next === 'boolean' ? next : !current;
     this.set(key, value);
     this.refreshOtpOptions();
+  }
+
+  toggleChaosMode(next?: boolean): void {
+    const current = !!this.get('chaosMode');
+    const value = typeof next === 'boolean' ? next : !current;
+    this.set('chaosMode', value);
   }
 
   refreshBoardOptions(): void {
@@ -239,6 +246,7 @@ export class HomeViewModel extends Observable {
       laneShiftPower: !!this.get('laneShiftPower'),
       doubleMovePower: !!this.get('doubleMovePower'),
       bombPower: !!this.get('bombPower'),
+      chaosMode: !!this.get('chaosMode'),
       difficulty: difficultyMeta?.key ?? 'balanced',
       vsAi: true,
     };

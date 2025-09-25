@@ -35,6 +35,7 @@ export interface VariantConfig {
   laneShift?: boolean;
   allowRowColShift?: boolean;
   bomb?: boolean;
+  chaosMode?: boolean;
 }
 
 export type PowerUsage = Record<OneTimePowerId, Record<Player, boolean>>;

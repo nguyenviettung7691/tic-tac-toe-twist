@@ -7,7 +7,7 @@ An extendable, single‑player tic‑tac‑toe with twists. Cross‑device UI vi
 Board Size: 3x3 (classic), 4x4, 5x5, 6x6. Win length configurable based on board size.
 
 Combine Fun Variants: Players can enable multiple compatible toggles at game start; conflicts are flagged.
-Variants can be a Rule or a One-Time-Power:
+Variants can be a Rule, a One-Time-Power, or a Game Mode:
 
 Rules are applied throughout the game:
 
@@ -22,7 +22,9 @@ Players can perform a One-Time-Power instead of placing a mark (unless OTP state
 - Lane Shift: Shift a selected row or column by one cell cyclically.
 - Bomb: Make a single cell unplayable for both players and also destroy any existing mark on the cell.
 
-Chaos Mode: Each round randomly selects a random number of variants.
+Game Modes change the overall game flow:
+
+- Chaos Mode: Each round randomly selects a random number of variants and OTPs.
 
 ---
 

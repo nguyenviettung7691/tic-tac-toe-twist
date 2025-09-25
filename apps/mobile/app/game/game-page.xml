@@ -61,6 +61,20 @@
                 <Label text="{{ $value }}" />
             </Repeater.itemTemplate>
           </Repeater>
+          <Label textWrap="true">
+            <FormattedString>
+              <Span text="Game Modes: " fontWeight="bold" />
+              <Span text="{{ modeSummary.length < 1 ? 'Vanilla' : '' }}" />
+            </FormattedString>
+          </Label>
+          <Repeater items="{{ modeSummary }}" visibility="{{ modeSummary.length > 0 ? 'visible' : 'collapse' }}">
+            <Repeater.itemsLayout>
+                <StackLayout />
+            </Repeater.itemsLayout>
+            <Repeater.itemTemplate>
+                <Label text="{{ $value }}" />
+            </Repeater.itemTemplate>
+          </Repeater>
           <ScrollView orientation="horizontal" visibility="{{ otpPowerItems.length > 0 ? 'visible' : 'collapse' }}">
             <Repeater items="{{ otpPowerItems }}">
               <Repeater.itemsLayout>

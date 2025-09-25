@@ -157,6 +157,28 @@ export function onPowerToggleChange(args: EventData) {
   viewModel.togglePower(context.key, desired);
 }
 
+export async function onToggleChaosMode(args: GestureEventData) {
+  if (!viewModel) {
+    return;
+  }
+  const tile = args.object as any;
+  viewModel.toggleChaosMode();
+  await animateTap(tile);
+}
+
+export function onChaosModeToggleChange(args: EventData) {
+  if (!viewModel) {
+    return;
+  }
+  const control = args.object as Switch;
+  const desired = control.checked;
+  const current = !!viewModel.get('chaosMode');
+  if (current === desired) {
+    return;
+  }
+  viewModel.toggleChaosMode(desired);
+}
+
 export function onHowToPlay() {
   Dialogs.alert({
     title: 'ℹ️ How to play',

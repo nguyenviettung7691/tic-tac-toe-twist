@@ -22,6 +22,7 @@ export interface GameSetup {
   laneShiftPower: boolean;
   doubleMovePower: boolean;
   bombPower: boolean;
+  chaosMode: boolean;
   difficulty: Difficulty;
   vsAi: boolean;
 }
@@ -45,6 +46,7 @@ const defaultSetup: GameSetup = {
   laneShiftPower: false,
   doubleMovePower: false,
   bombPower: false,
+  chaosMode: false,
   difficulty: 'balanced',
   vsAi: true,
 };
@@ -146,6 +148,7 @@ function normalizeSetup(setup: GameSetup): GameSetup {
     laneShiftPower: !!setup.laneShiftPower,
     doubleMovePower: !!setup.doubleMovePower,
     bombPower: !!setup.bombPower,
+    chaosMode: !!setup.chaosMode,
   };
 }
 
@@ -221,8 +224,44 @@ function isMoveLegal(state: GameState, move: Move): boolean {
   return legalMoves(state).some((m) => `${m.r}:${m.c}` === key);
 }
 
+const CHAOS_RULE_KEYS = ['gravity', 'wrap', 'misere', 'randomBlocks'] as const;
+const CHAOS_POWER_KEYS = ['laneShiftPower', 'doubleMovePower', 'bombPower'] as const;
+
+function pickRandomSubset<T>(items: readonly T[], minCount = 0): Set<T> {
+  if (items.length === 0) {
+    return new Set();
+  }
+  const min = Math.max(0, Math.min(items.length, minCount));
+  const max = items.length;
+  const count = Math.floor(Math.random() * (max - min + 1)) + min;
+  const pool = items.slice();
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const swap = pool[i];
+    pool[i] = pool[j];
+    pool[j] = swap;
+  }
+  return new Set(pool.slice(0, count));
+}
+
 function toVariantConfig(setup: GameSetup): VariantConfig {
   const winLength = (setup.boardSize === 3 ? 3 : setup.winLength) as 3 | 4;
+  if (setup.chaosMode) {
+    const rules = pickRandomSubset(CHAOS_RULE_KEYS, CHAOS_RULE_KEYS.length ? 1 : 0);
+    const powers = pickRandomSubset(CHAOS_POWER_KEYS, CHAOS_POWER_KEYS.length ? 1 : 0);
+    return {
+      boardSize: setup.boardSize,
+      winLength,
+      gravity: rules.has('gravity'),
+      wrap: rules.has('wrap'),
+      misere: rules.has('misere'),
+      randomBlocks: rules.has('randomBlocks') ? 3 : 0,
+      laneShift: powers.has('laneShiftPower'),
+      doubleMove: powers.has('doubleMovePower'),
+      bomb: powers.has('bombPower'),
+      chaosMode: true,
+    };
+  }
   return {
     boardSize: setup.boardSize,
     winLength,
@@ -233,6 +272,7 @@ function toVariantConfig(setup: GameSetup): VariantConfig {
     laneShift: setup.laneShiftPower,
     doubleMove: setup.doubleMovePower,
     bomb: setup.bombPower,
+    chaosMode: false,
   };
 }
 
