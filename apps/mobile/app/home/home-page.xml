@@ -83,7 +83,7 @@
         <GridLayout columns="*,auto" class="{{ `variant-row${chaosMode ? ' active' : ''}` }}" tap="onToggleChaosMode">
           <StackLayout col="0">
             <Label class="variant-title" text="Chaos 🎲" />
-            <Label class="variant-description" text="Randomly mixes variants and powers each round." textWrap="true" />
+            <Label class="variant-description" text="Randomly mixes variants and powers each game." textWrap="true" />
           </StackLayout>
           <Switch col="1" checked="{{ chaosMode }}" checkedChange="onChaosModeToggleChange" />
         </GridLayout>

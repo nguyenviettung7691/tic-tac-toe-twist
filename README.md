@@ -24,7 +24,7 @@ Players can perform a One-Time-Power instead of placing a mark (unless OTP state
 
 Game Modes change the overall game flow:
 
-- Chaos Mode: Each round randomly selects a random number of variants and OTPs.
+- Chaos Mode: Each game randomly selects a random number of variants and OTPs.
 
 ---
 

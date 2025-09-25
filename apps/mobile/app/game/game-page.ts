@@ -753,42 +753,35 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
   }));
 }
 
-function withGameModePrefix(game: GameState, message: string): string {
-  if (game.config.chaosMode) {
-    return `Chaos Mode active. ${message}`;
-  }
-  return message;
-}
-
 function buildStatusText(game: GameState, busy: boolean): string {
   if (game.config.laneShift && pendingLaneShift.armed && game.current === 'X' && !game.winner) {
-    return withGameModePrefix(game, 'Lane Shift armed. Tap a cell on the lane.');
+    return 'Lane Shift armed. Tap a cell on the lane.';
   }
   if (game.config.bomb && pendingBomb.armed && game.current === 'X' && !game.winner) {
-    return withGameModePrefix(game, 'Bomb armed. Tap a cell to blast it.');
+    return 'Bomb armed. Tap a cell to blast it.';
   }
   if (game.config.doubleMove && pendingDoubleMove.armed && game.current === 'X' && !game.winner) {
     if (pendingDoubleMove.firstSelection) {
-      return withGameModePrefix(game, 'Double Move armed. Pick the second cell.');
+      return 'Double Move armed. Pick the second cell.';
     }
-    return withGameModePrefix(game, 'Double Move armed. Pick the first cell.');
+    return 'Double Move armed. Pick the first cell.';
   }
   if (game.winner === 'Draw') {
-    return withGameModePrefix(game, "It's a draw!");
+    return "It's a draw!";
   }
   if (game.winner === 'X') {
-    return withGameModePrefix(game, 'You win!');
+    return 'You win!';
   }
   if (game.winner === 'O') {
-    return withGameModePrefix(game, 'AI wins this round.');
+    return 'AI wins this round.';
   }
   if (busy && game.current === 'O') {
-    return withGameModePrefix(game, 'AI is thinking...');
+    return 'AI is thinking...';
   }
   if (game.current === 'X') {
-    return withGameModePrefix(game, 'Your turn. You are X.');
+    return 'Your turn. You are X.';
   }
-  return withGameModePrefix(game, 'Waiting for opponent.');
+  return 'Waiting for opponent.';
 }
 
 function startReplay(vm: Observable, game: GameState) {
@@ -1200,7 +1193,7 @@ function formatOtpSummary(game: GameState): string[] {
 function formatGameModeSummary(game: GameState): string[] {
   const modes = [];
   if (game.config.chaosMode) {
-    modes.push('🎲 Chaos - Variants and powers shuffle each round.');
+    modes.push('🎲 Chaos - Variants and powers shuffle each game.');
   }
   return modes;
 }
