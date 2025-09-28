@@ -19,7 +19,7 @@ Thumbs.db
 .env.local
 .env.*.local
 services/ai/.env
-services/ai/.genkit/runtimes/
+services/ai/.genkit
 
 ### NativeScript app artifacts
 apps/mobile/platforms/
