@@ -23,25 +23,188 @@ interface LlmSuggestion {
   reason?: string;
 }
 
-const MODEL_NAME = process.env.GOOGLE_GENAI_MODEL ?? 'gemini-1.5-flash';
-let cachedModel: GenerativeModel | null | undefined;
+const DEFAULT_MODEL_ORDER = [
+  'gemini-1.5-flash-latest',
+  'gemini-1.5-flash',
+  'gemini-1.5-pro-latest',
+  'gemini-1.5-pro',
+  'gemini-1.0-pro-latest',
+  'gemini-1.0-pro',
+  'gemini-pro',
+];
+const MODEL_CANDIDATES = parseModelCandidates(process.env.GOOGLE_GENAI_MODEL);
+const TRANSIENT_RETRY_DELAY_MS = 30_000;
 
-function ensureModel(): GenerativeModel | null {
-  if (cachedModel !== undefined) {
-    return cachedModel;
+let activeModelIndex = 0;
+let cachedClient: GoogleGenerativeAI | null | undefined;
+let cachedModel: GenerativeModel | null | undefined;
+let cachedModelName: string | null = null;
+let llmRetryAt: number | null = null;
+let llmCooldownLogged = false;
+
+function ensureModel(): { model: GenerativeModel | null; name: string | null } {
+  if (llmRetryAt !== null) {
+    const now = Date.now();
+    if (now < llmRetryAt) {
+      if (!llmCooldownLogged) {
+        console.warn('[ai] Gemini temporarily disabled after recent errors', {
+          retryInMs: llmRetryAt - now,
+        });
+        llmCooldownLogged = true;
+      }
+      return { model: null, name: null };
+    }
+    llmRetryAt = null;
+    llmCooldownLogged = false;
   }
-  const apiKey = process.env.GOOGLE_GENAI_API_KEY;
-  if (!apiKey) {
+
+  const client = getApiClient();
+  if (!client) {
     cachedModel = null;
-    return cachedModel;
+    cachedModelName = null;
+    return { model: null, name: null };
   }
-  const client = new GoogleGenerativeAI(apiKey);
+
+  if (cachedModel !== undefined && cachedModelName !== null) {
+    return { model: cachedModel, name: cachedModelName };
+  }
+
+  if (!MODEL_CANDIDATES.length || activeModelIndex >= MODEL_CANDIDATES.length) {
+    cachedModel = null;
+    cachedModelName = null;
+    return { model: null, name: null };
+  }
+
+  const modelName = MODEL_CANDIDATES[activeModelIndex]!;
   cachedModel = client.getGenerativeModel({
-    model: MODEL_NAME,
+    model: modelName,
     systemInstruction:
       'You are a Tic-Tac-Toe Twist strategist. Respond only with a compact JSON payload like {"move":{"r":0,"c":0},"reason":"..."}.',
   });
-  return cachedModel;
+  cachedModelName = modelName;
+  console.info('[ai] Using LLM model', { model: modelName });
+  return { model: cachedModel, name: modelName };
+}
+
+function getApiClient(): GoogleGenerativeAI | null {
+  if (cachedClient !== undefined) {
+    return cachedClient;
+  }
+  const apiKey = process.env.GOOGLE_GENAI_API_KEY;
+  if (!apiKey) {
+    cachedClient = null;
+    return cachedClient;
+  }
+  cachedClient = new GoogleGenerativeAI(apiKey);
+  return cachedClient;
+}
+
+function resetModelCache() {
+  cachedModel = undefined;
+  cachedModelName = null;
+}
+
+function shouldSwitchModel(error: unknown): boolean {
+  if (activeModelIndex >= MODEL_CANDIDATES.length - 1) {
+    return false;
+  }
+
+  const status = getStatusCode(error);
+  const message = toErrorMessage(error);
+  const notFound = status === 404 || /not found/i.test(message);
+
+  if (!notFound) {
+    return false;
+  }
+
+  const previousModel = MODEL_CANDIDATES[activeModelIndex];
+  activeModelIndex += 1;
+  const nextModel = MODEL_CANDIDATES[activeModelIndex];
+  resetModelCache();
+  console.warn('[ai] Gemini model unavailable, switching to fallback', {
+    previousModel,
+    nextModel,
+    status,
+  });
+  return true;
+}
+
+function getStatusCode(error: unknown): number | undefined {
+  const candidate = error as { status?: unknown; statusCode?: unknown };
+  const values = [candidate?.status, candidate?.statusCode];
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value;
+    }
+    if (typeof value === 'string') {
+      const parsed = Number.parseInt(value, 10);
+      if (Number.isFinite(parsed)) {
+        return parsed;
+      }
+    }
+  }
+  return undefined;
+}
+
+function isTransientStatus(status: number | undefined): boolean {
+  if (status === undefined) {
+    return true;
+  }
+  if (status >= 500) {
+    return true;
+  }
+  return status === 429;
+}
+
+function toErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message ?? String(error);
+  }
+  return String(error);
+}
+
+function describeModelError(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    const output: Record<string, unknown> = {
+      name: error.name,
+      message: error.message,
+    };
+    const status = getStatusCode(error);
+    if (status !== undefined) {
+      output.status = status;
+    }
+    return output;
+  }
+  return { message: String(error) };
+}
+
+function parseModelCandidates(raw?: string | null): string[] {
+  const candidates: string[] = [];
+  const seen = new Set<string>();
+
+  const push = (value: string | null | undefined) => {
+    if (!value) {
+      return;
+    }
+    const trimmed = value.trim();
+    if (!trimmed || seen.has(trimmed)) {
+      return;
+    }
+    seen.add(trimmed);
+    candidates.push(trimmed);
+  };
+
+  if (typeof raw === 'string') {
+    raw
+      .split(/[\s,]+/)
+      .map((token) => token.trim())
+      .filter(Boolean)
+      .forEach((token) => push(token));
+  }
+
+  DEFAULT_MODEL_ORDER.forEach((model) => push(model));
+
+  return candidates;
 }
 
 export async function chooseMove(input: z.infer<typeof MoveInput>): Promise<z.infer<typeof MoveOutput>> {
@@ -186,37 +349,75 @@ async function getLlmSuggestion(
   placements: PlacementMove[],
   difficulty: Difficulty
 ): Promise<LlmSuggestion> {
-  const model = ensureModel();
-  if (!model) {
-    console.debug('[ai] LLM model unavailable; skipping suggestion');
-    return { move: null };
-  }
-  console.info('[ai] Requesting LLM suggestion', {
-    difficulty,
-    placements: placements.length,
-  });
   const legalText = placements.map((m) => `(${m.r},${m.c})`).join(', ');
   const prompt = buildPrompt(state, legalText, difficulty);
-  const result = await model.generateContent(prompt);
-  const text = result.response?.text();
-  if (!text) {
-    console.warn('[ai] LLM returned empty response');
-    return { move: null };
+
+  while (true) {
+    const { model, name } = ensureModel();
+    if (!model || !name) {
+      console.debug('[ai] LLM model unavailable; skipping suggestion');
+      return { move: null };
+    }
+
+    console.info('[ai] Requesting LLM suggestion', {
+      difficulty,
+      placements: placements.length,
+      model: name,
+    });
+
+    try {
+      const result = await model.generateContent(prompt);
+      const text = result.response?.text();
+      if (!text) {
+        console.warn('[ai] LLM returned empty response');
+        return { move: null };
+      }
+      const parsed = parseSuggestionJson(text);
+      if (!parsed) {
+        console.warn('[ai] Failed to parse LLM suggestion', text.trim());
+        return { move: null, reason: text.trim() };
+      }
+      const candidate = sanitizePlacement(parsed.move, state.board.length);
+      if (!candidate) {
+        console.warn('[ai] LLM suggested out-of-bounds move', parsed.move);
+        return { move: null, reason: parsed.reason };
+      }
+      return {
+        move: candidate,
+        reason: parsed.reason,
+      };
+    } catch (err) {
+      if (shouldSwitchModel(err)) {
+        continue;
+      }
+
+      const status = getStatusCode(err);
+      const transient = isTransientStatus(status);
+      console.warn(
+        transient
+          ? '[ai] LLM request failed; temporarily disabling Gemini'
+          : '[ai] LLM request failed; disabling Gemini integration',
+        {
+          model: name,
+          error: describeModelError(err),
+          retryInMs: transient ? TRANSIENT_RETRY_DELAY_MS : undefined,
+        }
+      );
+      resetModelCache();
+      if (transient) {
+        cachedClient = undefined;
+        activeModelIndex = 0;
+        llmRetryAt = Date.now() + TRANSIENT_RETRY_DELAY_MS;
+        llmCooldownLogged = false;
+      } else {
+        cachedClient = null;
+        activeModelIndex = MODEL_CANDIDATES.length;
+        llmRetryAt = null;
+        llmCooldownLogged = false;
+      }
+      return { move: null };
+    }
   }
-  const parsed = parseSuggestionJson(text);
-  if (!parsed) {
-    console.warn('[ai] Failed to parse LLM suggestion', text.trim());
-    return { move: null, reason: text.trim() };
-  }
-  const candidate = sanitizePlacement(parsed.move, state.board.length);
-  if (!candidate) {
-    console.warn('[ai] LLM suggested out-of-bounds move', parsed.move);
-    return { move: null, reason: parsed.reason };
-  }
-  return {
-    move: candidate,
-    reason: parsed.reason,
-  };
 }
 
 function buildPrompt(state: GameState, legalText: string, difficulty: Difficulty): string {
