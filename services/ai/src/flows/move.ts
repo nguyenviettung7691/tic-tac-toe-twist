@@ -428,13 +428,46 @@ function buildPrompt(state: GameState, legalText: string, difficulty: Difficulty
       : difficulty === 'balanced'
       ? 'Play strong, but a slightly creative alternative to perfect play is acceptable.'
       : 'Keep the game interesting and avoid obvious blunders, but variety is encouraged.';
-  return `You are choosing a move for Tic-Tac-Toe Twist. Index rows and columns from 0.
+
+  const config = state.config;
+  const variantLines: string[] = [];
+  variantLines.push(`Gravity: ${config.gravity ? 'enabled (pieces fall to lowest empty cell in column)' : 'disabled'}`);
+  variantLines.push(`Wrap: ${config.wrap ? 'enabled (lines can wrap around edges)' : 'disabled'}`);
+  variantLines.push(`Misere: ${config.misere ? 'enabled (making a win-length line loses)' : 'disabled'}`);
+  variantLines.push(`Random blocked cells: ${config.randomBlocks && config.randomBlocks > 0 ? config.randomBlocks : 'none'}`);
+  variantLines.push(`Chaos mode: ${config.chaosMode ? 'enabled' : 'disabled'}`);
+
+  const powerLines: string[] = [];
+  const powers = state.powers ?? {
+    doubleMove: { X: false, O: false },
+    laneShift: { X: false, O: false },
+    bomb: { X: false, O: false },
+  };
+  const current = state.current;
+  const describePower = (enabled: boolean | undefined, used: boolean | undefined, label: string) => {
+    if (!enabled) {
+      return `${label}: disabled`;
+    }
+    return `${label}: ${used ? 'already used' : 'available once'}`;
+  };
+  powerLines.push(describePower(config.doubleMove, powers.doubleMove?.[current], 'Double Move'));
+  powerLines.push(describePower(config.laneShift ?? config.allowRowColShift, powers.laneShift?.[current], 'Lane Shift'));
+  powerLines.push(describePower(config.bomb, powers.bomb?.[current], 'Bomb'));
+
+  const movesPlayed = state.moves.length;
+
+  return `You are the AI playing Tic-Tac-Toe Twist. Index rows and columns from 0.
+You must play as ${current} on this turn. Place a single mark for ${current}; do not attempt to move or remove existing marks.
 Board size: ${state.board.length}x${state.board.length}
-Win length: ${state.config.winLength}
-Current player: ${state.current}
-Board:
+Win length: ${config.winLength}
+Moves already played: ${movesPlayed}
+Current board ('.' = empty, 'B' = blocked, 'F' = bombed):
 ${board}
 Legal placements: ${legalText || 'none'}
+Variant settings:
+${variantLines.join('\n')}
+One-time powers status for ${current}:
+${powerLines.join('\n')}
 ${difficultyNote}
 Respond with a single JSON object like {"move":{"r":number,"c":number},"reason":"short explanation"}.`;
 }
