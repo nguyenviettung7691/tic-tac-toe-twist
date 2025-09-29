@@ -15,116 +15,134 @@
     </ActionBar.titleView>
   </ActionBar>
 
-  <ScrollView>
-    <StackLayout class="sheet">
-      <StackLayout class="section">
-        <Label class="section-heading" text="Game Setup" />
-        <Label class="section-subtitle" text="Board size" />
-        <FlexboxLayout class="segmented" justifyContent="center">
-          <Repeater items="{{ boardOptions }}">
-            <Repeater.itemsLayout>
-              <FlexboxLayout style="width: 100%"/>
-            </Repeater.itemsLayout>
+  <GridLayout rows="*, auto">
+
+    <ScrollView row="0">
+      <StackLayout class="sheet">
+        <StackLayout class="section">
+          <Label class="section-heading" text="Game Setup" />
+          <Label class="section-subtitle" text="Board size" />
+          <FlexboxLayout class="segmented" justifyContent="center">
+            <Repeater items="{{ boardOptions }}">
+              <Repeater.itemsLayout>
+                <FlexboxLayout style="width: 100%"/>
+              </Repeater.itemsLayout>
+              <Repeater.itemTemplate>
+                <StackLayout class="{{ `segmented-option${selected ? ' active' : ''}` }}" tap="onSelectBoard">
+                  <Label horizontalAlignment="center" text="{{ label }}" />
+                </StackLayout>
+              </Repeater.itemTemplate>
+            </Repeater>
+          </FlexboxLayout>
+        </StackLayout>
+
+        <StackLayout class="section">
+          <Label class="slider-label" text="Win condition ❓" tap="onWinLengthInfo" />
+          <FlexboxLayout class="winlength-control" justifyContent="center">
+            <Repeater items="{{ winLengthOptions }}">
+              <Repeater.itemsLayout>
+                <FlexboxLayout flexDirection="row" />
+              </Repeater.itemsLayout>
+              <Repeater.itemTemplate>
+                <Label text="❎"
+                      class="{{ className }}"
+                      tap="onSelectWinLength"
+                      isEnabled="{{ enabled }}" />
+              </Repeater.itemTemplate>
+            </Repeater>
+          </FlexboxLayout>
+        </StackLayout>
+
+        <StackLayout class="section">
+          <Label class="section-heading" text="Variants ❓" tap="onVariantsInfo" />
+          <Label class="section-subtitle" text="Rules ❓" tap="onRulesInfo" />
+          <Repeater items="{{ variantOptions }}">
             <Repeater.itemTemplate>
-              <StackLayout class="{{ `segmented-option${selected ? ' active' : ''}` }}" tap="onSelectBoard">
-                <Label horizontalAlignment="center" text="{{ label }}" />
-              </StackLayout>
+              <GridLayout columns="*,auto" class="variant-row" tap="onToggleVariant">
+                <StackLayout col="0">
+                  <Label class="variant-title" text="{{ title + ' ' + icon }}" />
+                  <Label class="variant-description" text="{{ description }}" textWrap="true" />
+                </StackLayout>
+                <Switch col="1" checked="{{ active }}" checkedChange="onVariantToggleChange" />
+              </GridLayout>
             </Repeater.itemTemplate>
           </Repeater>
-        </FlexboxLayout>
-      </StackLayout>
 
-      <StackLayout class="section">
-        <Label class="slider-label" text="Win condition ❓" tap="onWinLengthInfo" />
-        <FlexboxLayout class="winlength-control" justifyContent="center">
-          <Repeater items="{{ winLengthOptions }}">
-            <Repeater.itemsLayout>
-              <FlexboxLayout flexDirection="row" />
-            </Repeater.itemsLayout>
+          <Label class="section-subtitle" text="One-Time-Power ❓" tap="onOTPInfo" />
+          <Repeater items="{{ otpOptions }}">
             <Repeater.itemTemplate>
-              <Label text="❎"
-                     class="{{ className }}"
-                     tap="onSelectWinLength"
-                     isEnabled="{{ enabled }}" />
+              <GridLayout columns="*,auto" class="{{ `variant-row${disabled ? ' disabled' : ''}` }}" tap="onTogglePower" isEnabled="{{ !disabled }}">
+                <StackLayout col="0">
+                  <Label class="variant-title" text="{{ title + ' ' + icon }}" />
+                  <Label class="variant-description" text="{{ description }}" textWrap="true" />
+                </StackLayout>
+                <Switch col="1" checked="{{ active }}" isEnabled="{{ !disabled }}" checkedChange="onPowerToggleChange" />
+              </GridLayout>
             </Repeater.itemTemplate>
           </Repeater>
-        </FlexboxLayout>
+
+          <Label class="section-subtitle" text="Game Mode" />
+          <GridLayout columns="*,auto" class="{{ `variant-row${chaosMode ? ' active' : ''}` }}" tap="onToggleChaosMode">
+            <StackLayout col="0">
+              <Label class="variant-title" text="Chaos 🎲" />
+              <Label class="variant-description" text="Randomly mixes variants and powers each game." textWrap="true" />
+            </StackLayout>
+            <Switch col="1" checked="{{ chaosMode }}" checkedChange="onChaosModeToggleChange" />
+          </GridLayout>
+        </StackLayout>
+
+        <StackLayout class="section">
+          <Label class="section-heading" text="Opponent❓" tap="onOpponentInfo" />
+          <FlexboxLayout class="opponent-group" justifyContent="center">
+            <Repeater items="{{ opponentOptions }}">
+              <Repeater.itemsLayout>
+                <FlexboxLayout style="width: 100%"/>
+              </Repeater.itemsLayout>
+              <Repeater.itemTemplate>
+                <StackLayout class="{{ `opponent-chip${active ? ' active' : ''}${disabled ? ' disabled' : ''}` }}">
+                  <Label horizontalAlignment="center" class="opponent-icon" text="{{ icon }}" />
+                  <Label horizontalAlignment="center" class="opponent-title" text="{{ title }}" />
+                </StackLayout>
+              </Repeater.itemTemplate>
+            </Repeater>
+          </FlexboxLayout>
+        </StackLayout>
+
+        <StackLayout class="section">
+          <Label class="section-subtitle" text="AI Difficulty" />
+          <FlexboxLayout class="difficulty-group" justifyContent="center">
+            <Repeater items="{{ difficultyOptions }}">
+              <Repeater.itemsLayout>
+                <FlexboxLayout style="width: 100%"/>
+              </Repeater.itemsLayout>
+              <Repeater.itemTemplate>
+                <StackLayout class="{{ `difficulty-chip${active ? ' active' : ''}` }}" tap="onSelectDifficulty">
+                  <Label horizontalAlignment="center" class="difficulty-title" text="{{ title }}" />
+                  <Label horizontalAlignment="center" class="difficulty-caption" text="{{ caption }}" />
+                </StackLayout>
+              </Repeater.itemTemplate>
+            </Repeater>
+          </FlexboxLayout>
+        </StackLayout>
+
+        <Button text="Start Game" class="primary-cta" tap="onStartGame" />
+        <Label text="How to play" class="secondary-link" tap="onHowToPlay" />
       </StackLayout>
+    </ScrollView>
+    <FlexboxLayout row="1" class="bottom-nav">
+        <StackLayout class="btn active">
+          <Label text="▶️" class="icon active" />
+          <Label text="PLAY" />
+        </StackLayout>
+        <StackLayout class="btn">
+          <Label text="🏅" class="icon" />
+          <Label text="PROFILE" />
+        </StackLayout>
+        <StackLayout class="btn">
+          <Label text="ℹ️" class="icon" />
+          <Label text="ABOUT" />
+        </StackLayout>
+    </FlexboxLayout>
 
-      <StackLayout class="section">
-        <Label class="section-heading" text="Variants ❓" tap="onVariantsInfo" />
-        <Label class="section-subtitle" text="Rules ❓" tap="onRulesInfo" />
-        <Repeater items="{{ variantOptions }}">
-          <Repeater.itemTemplate>
-            <GridLayout columns="*,auto" class="variant-row" tap="onToggleVariant">
-              <StackLayout col="0">
-                <Label class="variant-title" text="{{ title + ' ' + icon }}" />
-                <Label class="variant-description" text="{{ description }}" textWrap="true" />
-              </StackLayout>
-              <Switch col="1" checked="{{ active }}" checkedChange="onVariantToggleChange" />
-            </GridLayout>
-          </Repeater.itemTemplate>
-        </Repeater>
-
-        <Label class="section-subtitle" text="One-Time-Power ❓" tap="onOTPInfo" />
-        <Repeater items="{{ otpOptions }}">
-          <Repeater.itemTemplate>
-            <GridLayout columns="*,auto" class="{{ `variant-row${disabled ? ' disabled' : ''}` }}" tap="onTogglePower" isEnabled="{{ !disabled }}">
-              <StackLayout col="0">
-                <Label class="variant-title" text="{{ title + ' ' + icon }}" />
-                <Label class="variant-description" text="{{ description }}" textWrap="true" />
-              </StackLayout>
-              <Switch col="1" checked="{{ active }}" isEnabled="{{ !disabled }}" checkedChange="onPowerToggleChange" />
-            </GridLayout>
-          </Repeater.itemTemplate>
-        </Repeater>
-
-        <Label class="section-subtitle" text="Game Mode" />
-        <GridLayout columns="*,auto" class="{{ `variant-row${chaosMode ? ' active' : ''}` }}" tap="onToggleChaosMode">
-          <StackLayout col="0">
-            <Label class="variant-title" text="Chaos 🎲" />
-            <Label class="variant-description" text="Randomly mixes variants and powers each game." textWrap="true" />
-          </StackLayout>
-          <Switch col="1" checked="{{ chaosMode }}" checkedChange="onChaosModeToggleChange" />
-        </GridLayout>
-      </StackLayout>
-
-      <StackLayout class="section">
-        <Label class="section-heading" text="Opponent❓" tap="onOpponentInfo" />
-        <FlexboxLayout class="opponent-group" justifyContent="center">
-          <Repeater items="{{ opponentOptions }}">
-            <Repeater.itemsLayout>
-              <FlexboxLayout style="width: 100%"/>
-            </Repeater.itemsLayout>
-            <Repeater.itemTemplate>
-              <StackLayout class="{{ `opponent-chip${active ? ' active' : ''}${disabled ? ' disabled' : ''}` }}">
-                <Label horizontalAlignment="center" class="opponent-icon" text="{{ icon }}" />
-                <Label horizontalAlignment="center" class="opponent-title" text="{{ title }}" />
-              </StackLayout>
-            </Repeater.itemTemplate>
-          </Repeater>
-        </FlexboxLayout>
-      </StackLayout>
-
-      <StackLayout class="section">
-        <Label class="section-subtitle" text="AI Difficulty" />
-        <FlexboxLayout class="difficulty-group" justifyContent="center">
-          <Repeater items="{{ difficultyOptions }}">
-            <Repeater.itemsLayout>
-              <FlexboxLayout style="width: 100%"/>
-            </Repeater.itemsLayout>
-            <Repeater.itemTemplate>
-              <StackLayout class="{{ `difficulty-chip${active ? ' active' : ''}` }}" tap="onSelectDifficulty">
-                <Label horizontalAlignment="center" class="difficulty-title" text="{{ title }}" />
-                <Label horizontalAlignment="center" class="difficulty-caption" text="{{ caption }}" />
-              </StackLayout>
-            </Repeater.itemTemplate>
-          </Repeater>
-        </FlexboxLayout>
-      </StackLayout>
-
-      <Button text="Start Game" class="primary-cta" tap="onStartGame" />
-      <Label text="How to play" class="secondary-link" tap="onHowToPlay" />
-    </StackLayout>
-  </ScrollView>
+  </GridLayout>
 </Page>

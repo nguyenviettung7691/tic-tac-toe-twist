@@ -1,1 +1,1 @@
-<Frame defaultPage="home/home-page" />
+<Frame defaultPage="home/home-page" actionBarVisibility="always" animated="true" />

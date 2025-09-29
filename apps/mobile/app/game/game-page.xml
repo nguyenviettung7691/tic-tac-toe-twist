@@ -17,8 +17,8 @@
     </ActionBar.titleView>
     <NavigationButton text="Back" android.systemIcon="ic_menu_back" tap="onBack" />
   </ActionBar>
-  <GridLayout rows="*" columns="*">
-    <ScrollView row="0" col="0">
+  <GridLayout rows="*, auto">
+    <ScrollView row="0">
       <StackLayout class="screen" spacing="20">
         <StackLayout class="card game-info" padding="10" spacing="8" visibility="{{ resultVisible ? 'collapse' : 'visible' }}">
           <Label textWrap="true">
@@ -189,6 +189,20 @@
         </StackLayout>
       </StackLayout>
     </ScrollView>
+    <FlexboxLayout row="1" class="bottom-nav">
+        <StackLayout class="btn active">
+          <Label text="▶️" class="icon active" />
+          <Label text="PLAY" />
+        </StackLayout>
+        <StackLayout class="btn">
+          <Label text="🏅" class="icon" />
+          <Label text="PROFILE" />
+        </StackLayout>
+        <StackLayout class="btn">
+          <Label text="ℹ️" class="icon" />
+          <Label text="ABOUT" />
+        </StackLayout>
+    </FlexboxLayout>
     <AbsoluteLayout id="confettiLayer" row="0" col="0" class="confetti-layer" isHitTestVisible="false" visibility="{{ confettiVisible ? 'visible' : 'collapse' }}" horizontalAlignment="stretch" verticalAlignment="stretch" />
   </GridLayout>
 </Page>
