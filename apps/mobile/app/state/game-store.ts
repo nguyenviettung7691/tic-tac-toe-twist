@@ -9,6 +9,7 @@ import {
   legalMoves,
 } from '@ttt/engine';
 import type { Difficulty, GameState, Move, VariantConfig } from '@ttt/engine';
+import { getApiBaseUrl, requestMove } from '~/services/api';
 
 export type { GameState, Move } from '@ttt/engine';
 
@@ -59,6 +60,50 @@ let aiThinkTimer: ReturnType<typeof setTimeout> | null = null;
 
 const listeners = new Set<Listener>();
 const ALLOWED_BOARD_SIZES: GameSetup['boardSize'][] = [3, 4, 5, 6];
+
+
+function describeError(error: unknown): Record<string, unknown> {
+  if (error instanceof Error) {
+    const details: Record<string, unknown> = {
+      name: error.name,
+      message: error.message,
+    };
+
+    if (typeof error.stack === 'string') {
+      details.stack = error.stack;
+    }
+
+    const errorWithExtras = error as Error & Record<string, unknown>;
+    for (const key of ['code', 'status', 'cause', 'errno'] as const) {
+      const value = errorWithExtras[key];
+      if (value !== undefined) {
+        details[key] = value;
+      }
+    }
+
+    return details;
+  }
+
+  if (!error || typeof error !== 'object') {
+    return { message: String(error) };
+  }
+
+  const plain: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(error as Record<string, unknown>)) {
+    plain[key] = value;
+  }
+
+  const constructorName = (error as { constructor?: { name?: string } }).constructor?.name;
+  if (constructorName && constructorName !== 'Object') {
+    plain.type = constructorName;
+  }
+
+  if (Object.keys(plain).length === 0) {
+    plain.message = String(error);
+  }
+
+  return plain;
+}
 
 export function getSnapshot(): GameSnapshot {
   return {
@@ -167,15 +212,77 @@ function scheduleAiMove() {
       return;
     }
 
-    try {
-      const aiMove = bestMove(currentGame, currentGame.current);
-      if (aiMove) {
+    const pendingState = currentGame;
+    const difficulty = currentSetup.difficulty;
+
+    const run = async () => {
+      try {
+        console.info('[ai] Requesting Genkit move', {
+          difficulty,
+          current: pendingState.current,
+          movesPlayed: pendingState.moves.length,
+        });
+
+        const response = await requestMove({
+          state: pendingState,
+          config: pendingState.config,
+          difficulty,
+        });
+
+        const move = response?.move;
+        console.info('[ai] Received Genkit response', {
+          strategy: response?.strategy ?? 'unknown',
+          reason: response?.reason,
+          move,
+        });
+
+        if (!move) {
+          throw new Error('AI response did not include a move.');
+        }
+
+        if (!currentGame || currentGame.winner) {
+          return;
+        }
+
+        if (currentGame !== pendingState) {
+          return;
+        }
+
+        const aiMove: Move = { r: move.r, c: move.c };
+        if (!isMoveLegal(currentGame, aiMove)) {
+          throw new Error(`AI proposed illegal move at ${aiMove.r}:${aiMove.c}.`);
+        }
+
         applyMoveAndUpdate(aiMove);
+      } catch (err) {
+        const errorDetails = describeError(err);
+        console.error('[ai] Genkit move request failed', {
+          endpoint: `${getApiBaseUrl()}/move`,
+          request: {
+            current: pendingState.current,
+            difficulty,
+            movesPlayed: pendingState.moves.length,
+          },
+          error: errorDetails,
+        });
+        console.warn('[ai] Falling back to local solver', {
+          reason: 'Genkit move request failed',
+          error: errorDetails,
+        });
+        if (currentGame && !currentGame.winner) {
+          const fallback = bestMove(currentGame, currentGame.current);
+          if (fallback && isMoveLegal(currentGame, fallback)) {
+            console.info('[ai] Applying local fallback move', fallback);
+            applyMoveAndUpdate(fallback);
+          }
+        }
+      } finally {
+        busy = false;
+        notifyListeners();
       }
-    } finally {
-      busy = false;
-      notifyListeners();
-    }
+    };
+
+    void run();
   }, 16);
 }
 

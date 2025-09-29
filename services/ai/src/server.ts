@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import express from 'express';
-import getPort, { portNumbers } from 'get-port';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { chooseMove, MoveInput, MoveOutput } from './flows/move.js';
@@ -27,29 +26,41 @@ let httpServer: Server | null = null;
 let shuttingDown = false;
 
 async function startServer() {
-  const preferredPort = Number(process.env.PORT || 9191);
-  const port = await getPort({ port: portNumbers(preferredPort, preferredPort + 20) });
-
-  if (port !== preferredPort) {
-    console.warn(`[server] Port ${preferredPort} is busy; using ${port} instead. Set PORT to override.`);
+  const requestedPort = Number(process.env.PORT || 9191);
+  if (!Number.isFinite(requestedPort) || requestedPort <= 0) {
+    throw new Error(`Invalid PORT value: ${process.env.PORT}`);
   }
 
-  httpServer = app.listen(port, () => {
+  const host = process.env.HOST || '0.0.0.0';
+
+  httpServer = app.listen(requestedPort, host, () => {
     const address = httpServer?.address() as AddressInfo | null;
-    if (address) {
-      const host = address.address === '::' ? 'localhost' : address.address;
-      const baseUrl = `http://${host}:${address.port}`;
-      console.log(`[server] AI service listening on ${baseUrl}`);
-      if (host === 'localhost' || host === '127.0.0.1' || host === '::') {
-        console.log(`[server] Android emulator base URL: http://10.0.2.2:${address.port}`);
-      }
-    } else {
-      console.log(`[server] AI service listening on port ${port}`);
+    if (!address) {
+      console.log(`[server] AI service listening on port ${requestedPort}`);
+      return;
+    }
+
+    const addressText = address.address;
+    const isWildcardHost = addressText === '::' || addressText === '0.0.0.0';
+    const displayHost = isWildcardHost ? 'localhost' : addressText;
+    const baseUrl = `http://${displayHost}:${address.port}`;
+    console.log(`[server] AI service listening on ${baseUrl}`);
+
+    if (isWildcardHost || displayHost === 'localhost' || displayHost === '127.0.0.1') {
+      console.log(`[server] Android emulator base URL: http://10.0.2.2:${address.port}`);
+      console.log(`[server] iOS simulator base URL: http://127.0.0.1:${address.port}`);
     }
   });
 
-  httpServer.on('error', (err) => {
-    console.error('[server] HTTP server error', err);
+  httpServer.on('error', (err: NodeJS.ErrnoException) => {
+    if (err.code === 'EADDRINUSE') {
+      console.error(
+        `[server] Port ${requestedPort} is already in use. Stop the other process or set PORT to an available value.`
+      );
+    } else {
+      console.error('[server] HTTP server error', err);
+    }
+    shutdown('HTTP server failed to start', 1).catch(() => process.exit(1));
   });
 }
 
