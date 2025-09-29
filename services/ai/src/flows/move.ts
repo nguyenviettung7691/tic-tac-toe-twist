@@ -24,13 +24,13 @@ interface LlmSuggestion {
 }
 
 const DEFAULT_MODEL_ORDER = [
-  'gemini-1.5-flash-latest',
-  'gemini-1.5-flash',
-  'gemini-1.5-pro-latest',
-  'gemini-1.5-pro',
-  'gemini-1.0-pro-latest',
-  'gemini-1.0-pro',
-  'gemini-pro',
+  'gemini-2.5-flash-lite',
+  'gemini-2.5-flash',
+  'gemini-2.0-flash-lite',
+  'gemini-2.0-flash-lite-001',
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-001',
+  'gemini-2.0-flash-exp'
 ];
 const MODEL_CANDIDATES = parseModelCandidates(process.env.GOOGLE_GENAI_MODEL);
 const TRANSIENT_RETRY_DELAY_MS = 30_000;
@@ -226,20 +226,39 @@ export async function chooseMove(input: z.infer<typeof MoveInput>): Promise<z.in
     });
   }
 
-  const engineDepth = depthForDifficulty(difficulty, state.board.length);
-  const engineMove = toPlacement(searchBest(state, player, { depth: engineDepth }));
-  console.debug('[ai] Engine baseline computed', { depth: engineDepth, engineMove });
+  const searchPlan = searchPlanForDifficulty(difficulty, state.board.length);
+  const engineMoveRaw = searchBest(state, player, { depth: searchPlan.depth, maxMillis: searchPlan.maxMillis });
+  const engineMove = toPlacement(engineMoveRaw);
+  const engineScore = engineMove ? evaluatePlacement(state, engineMove, player) : Number.NEGATIVE_INFINITY;
+  console.debug('[ai] Engine baseline computed', {
+    depth: searchPlan.depth,
+    maxMillis: searchPlan.maxMillis ?? null,
+    engineMove,
+    engineScore,
+  });
 
   const suggestion = await getLlmSuggestion(state, placements, difficulty).catch((err) => {
     console.warn('[ai] LLM suggestion failed:', err);
     return { move: null } as LlmSuggestion;
   });
+  const llmScore = suggestion.move ? evaluatePlacement(state, suggestion.move, player) : null;
   console.info('[ai] LLM suggestion result', {
     llmMove: suggestion.move,
     reason: suggestion.reason,
+    score: llmScore,
   });
 
-  const chosen = selectMove(state, player, placements, difficulty, engineMove, suggestion.move);
+  const chosen = selectMove(
+    state,
+    player,
+    placements,
+    difficulty,
+    engineMove,
+    engineScore,
+    suggestion.move,
+    llmScore,
+    searchPlan.llmTolerance
+  );
   const selectedMove = chosen ?? engineMove ?? placements[0];
   const strategy = inferStrategy(selectedMove, engineMove, suggestion.move);
   const reason = strategy === 'llm' ? suggestion.reason : undefined;
@@ -263,16 +282,19 @@ function selectMove(
   placements: PlacementMove[],
   difficulty: Difficulty,
   engineMove: PlacementMove | null,
-  llmMove: PlacementMove | null
+  engineScore: number,
+  llmMove: PlacementMove | null,
+  llmScore: number | null,
+  llmTolerance: number
 ): PlacementMove | null {
   switch (difficulty) {
     case 'sharp':
-      return pickSharp(state, player, placements, engineMove, llmMove);
+      return pickSharp(state, player, placements, engineMove, engineScore, llmMove, llmScore);
     case 'balanced':
-      return pickBalanced(state, player, placements, engineMove, llmMove);
+      return pickBalanced(state, player, placements, engineMove, engineScore, llmMove, llmScore, llmTolerance);
     case 'chill':
     default:
-      return pickChill(state, player, placements, engineMove, llmMove);
+      return pickChill(state, player, placements, engineMove, engineScore, llmMove, llmScore);
   }
 }
 
@@ -281,16 +303,25 @@ function pickSharp(
   player: Player,
   placements: PlacementMove[],
   engineMove: PlacementMove | null,
-  llmMove: PlacementMove | null
+  engineScore: number,
+  llmMove: PlacementMove | null,
+  llmScore: number | null
 ): PlacementMove | null {
   const legalLlm = llmMove && includesMove(placements, llmMove) ? llmMove : null;
   const legalEngine = engineMove && includesMove(placements, engineMove) ? engineMove : null;
+  const llmValue = legalLlm && llmScore !== null ? llmScore : Number.NEGATIVE_INFINITY;
+  const engineValue = legalEngine ? engineScore : Number.NEGATIVE_INFINITY;
+
   if (legalEngine && legalLlm) {
-    const engineScore = evaluatePlacement(state, legalEngine, player);
-    const llmScore = evaluatePlacement(state, legalLlm, player);
-    return llmScore > engineScore ? legalLlm : legalEngine;
+    return llmValue > engineValue ? legalLlm : legalEngine;
   }
-  return legalEngine ?? legalLlm ?? null;
+  if (legalEngine) {
+    return legalEngine;
+  }
+  if (legalLlm) {
+    return legalLlm;
+  }
+  return bestByScore(state, player, placements);
 }
 
 function pickBalanced(
@@ -298,16 +329,31 @@ function pickBalanced(
   player: Player,
   placements: PlacementMove[],
   engineMove: PlacementMove | null,
-  llmMove: PlacementMove | null
+  engineScore: number,
+  llmMove: PlacementMove | null,
+  llmScore: number | null,
+  llmTolerance: number
 ): PlacementMove | null {
   const legalLlm = llmMove && includesMove(placements, llmMove) ? llmMove : null;
-  if (legalLlm) {
-    return legalLlm;
-  }
   const legalEngine = engineMove && includesMove(placements, engineMove) ? engineMove : null;
+
+  if (legalLlm && llmScore !== null) {
+    if (!legalEngine || !Number.isFinite(engineScore)) {
+      return legalLlm;
+    }
+    if (llmScore + llmTolerance >= engineScore) {
+      return legalLlm;
+    }
+  }
+
   if (legalEngine) {
     return legalEngine;
   }
+
+  if (legalLlm) {
+    return legalLlm;
+  }
+
   return bestByScore(state, player, placements);
 }
 
@@ -316,8 +362,12 @@ function pickChill(
   player: Player,
   placements: PlacementMove[],
   engineMove: PlacementMove | null,
-  llmMove: PlacementMove | null
+  engineScore: number,
+  llmMove: PlacementMove | null,
+  llmScore: number | null
 ): PlacementMove | null {
+  void engineScore;
+  void llmScore;
   const legalEngine = engineMove && includesMove(placements, engineMove) ? engineMove : null;
   const legalLlm = llmMove && includesMove(placements, llmMove) ? llmMove : null;
   const safeMoves = placements.filter((move) => evaluatePlacement(state, move, player) > -9000);
@@ -334,14 +384,28 @@ function pickChill(
   return legalEngine ?? legalLlm ?? null;
 }
 
-function depthForDifficulty(difficulty: Difficulty, boardSize: number): number {
+interface SearchPlan {
+  depth: number;
+  maxMillis?: number;
+  llmTolerance: number;
+}
+
+function searchPlanForDifficulty(difficulty: Difficulty, boardSize: number): SearchPlan {
   if (difficulty === 'sharp') {
-    return boardSize === 3 ? 8 : 6;
+    return {
+      depth: boardSize === 3 ? 10 : 7,
+      maxMillis: boardSize === 3 ? 450 : 600,
+      llmTolerance: 60,
+    };
   }
   if (difficulty === 'balanced') {
-    return boardSize === 3 ? 5 : 4;
+    return {
+      depth: boardSize === 3 ? 6 : 5,
+      maxMillis: boardSize === 3 ? 240 : 320,
+      llmTolerance: 180,
+    };
   }
-  return 2;
+  return { depth: boardSize === 3 ? 3 : 2, llmTolerance: 400 };
 }
 
 async function getLlmSuggestion(
@@ -351,6 +415,7 @@ async function getLlmSuggestion(
 ): Promise<LlmSuggestion> {
   const legalText = placements.map((m) => `(${m.r},${m.c})`).join(', ');
   const prompt = buildPrompt(state, legalText, difficulty);
+  console.debug('[ai] Gemini prompt\n', prompt);
 
   while (true) {
     const { model, name } = ensureModel();
@@ -430,12 +495,25 @@ function buildPrompt(state: GameState, legalText: string, difficulty: Difficulty
       : 'Keep the game interesting and avoid obvious blunders, but variety is encouraged.';
 
   const config = state.config;
+  const current = state.current;
+  const opponent: Player = current === 'X' ? 'O' : 'X';
+
   const variantLines: string[] = [];
-  variantLines.push(`Gravity: ${config.gravity ? 'enabled (pieces fall to lowest empty cell in column)' : 'disabled'}`);
-  variantLines.push(`Wrap: ${config.wrap ? 'enabled (lines can wrap around edges)' : 'disabled'}`);
-  variantLines.push(`Misere: ${config.misere ? 'enabled (making a win-length line loses)' : 'disabled'}`);
-  variantLines.push(`Random blocked cells: ${config.randomBlocks && config.randomBlocks > 0 ? config.randomBlocks : 'none'}`);
-  variantLines.push(`Chaos mode: ${config.chaosMode ? 'enabled' : 'disabled'}`);
+  if (config.gravity) {
+    variantLines.push('Gravity: enabled - any piece you place drops to the lowest empty cell of that column.');
+  }
+  if (config.wrap) {
+    variantLines.push('Wraparound: enabled - winning lines may continue across opposite board edges.');
+  }
+  if (config.misere) {
+    variantLines.push('Misere: enabled - completing a win-length line causes an immediate loss instead of a win.');
+  }
+  if (config.randomBlocks && config.randomBlocks > 0) {
+    variantLines.push(`Random blocks: ${config.randomBlocks} cells were blocked at game start and cannot be played on.`);
+  }
+  if (config.chaosMode) {
+    variantLines.push('Chaos mode: enabled - this match may include randomly selected rule and power twists.');
+  }
 
   const powerLines: string[] = [];
   const powers = state.powers ?? {
@@ -443,34 +521,45 @@ function buildPrompt(state: GameState, legalText: string, difficulty: Difficulty
     laneShift: { X: false, O: false },
     bomb: { X: false, O: false },
   };
-  const current = state.current;
-  const describePower = (enabled: boolean | undefined, used: boolean | undefined, label: string) => {
-    if (!enabled) {
-      return `${label}: disabled`;
-    }
-    return `${label}: ${used ? 'already used' : 'available once'}`;
-  };
-  powerLines.push(describePower(config.doubleMove, powers.doubleMove?.[current], 'Double Move'));
-  powerLines.push(describePower(config.laneShift ?? config.allowRowColShift, powers.laneShift?.[current], 'Lane Shift'));
-  powerLines.push(describePower(config.bomb, powers.bomb?.[current], 'Bomb'));
+  if (config.doubleMove) {
+    const used = powers.doubleMove?.[current];
+    powerLines.push(`Double Move (${used ? 'used' : 'unused'}): place two marks in one turn as long as both placements are legal.`);
+  }
+  const laneShiftEnabled = !!(config.laneShift ?? config.allowRowColShift);
+  if (laneShiftEnabled) {
+    const used = powers.laneShift?.[current];
+    powerLines.push(`Lane Shift (${used ? 'used' : 'unused'}): shift an entire row or column by one cell in a cyclic fashion.`);
+  }
+  if (config.bomb) {
+    const used = powers.bomb?.[current];
+    powerLines.push(`Bomb (${used ? 'used' : 'unused'}): mark a cell as unusable for both players and remove any mark there.`);
+  }
+
+  const extraSections: string[] = [];
+  if (variantLines.length) {
+    extraSections.push(`Variant rules active:\n${variantLines.join('\n')}`);
+  }
+  if (powerLines.length) {
+    extraSections.push(`One-time powers available to ${current} (AI):\n${powerLines.join('\n')}`);
+  }
+  const extraContext = extraSections.length ? `${extraSections.join('\n')}\n` : '';
 
   const movesPlayed = state.moves.length;
 
   return `You are the AI playing Tic-Tac-Toe Twist. Index rows and columns from 0.
 You must play as ${current} on this turn. Place a single mark for ${current}; do not attempt to move or remove existing marks.
+Opponent (human) is playing as ${opponent}.
 Board size: ${state.board.length}x${state.board.length}
 Win length: ${config.winLength}
 Moves already played: ${movesPlayed}
 Current board ('.' = empty, 'B' = blocked, 'F' = bombed):
 ${board}
 Legal placements: ${legalText || 'none'}
-Variant settings:
-${variantLines.join('\n')}
-One-time powers status for ${current}:
-${powerLines.join('\n')}
-${difficultyNote}
+${extraContext}${difficultyNote}
 Respond with a single JSON object like {"move":{"r":number,"c":number},"reason":"short explanation"}.`;
 }
+
+
 
 function parseSuggestionJson(raw: string): { move: any; reason?: string } | null {
   const json = extractJson(raw);
