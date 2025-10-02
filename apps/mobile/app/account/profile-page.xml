@@ -1,0 +1,92 @@
+<Page navigatingTo="onNavigatingTo" xmlns="http://schemas.nativescript.org/tns.xsd">
+  <ActionBar class="app-bar" flat="true">
+    <ActionBar.titleView>
+      <GridLayout columns="auto,*" class="app-bar-grid">
+        <FlexboxLayout col="0" class="brand">
+          <Image class="brand-icon" src="~/assets/logo.png" />
+          <Label class="brand-title">
+            <FormattedString>
+              <Span text="Tic-Tac-Toe" />
+              <Span text="Twist" class="twist" />
+            </FormattedString>
+          </Label>
+        </FlexboxLayout>
+        <FlexboxLayout col="1"
+                      class="avatar-container"
+                      horizontalAlignment="right"
+                      verticalAlignment="center"
+                      tap="onAvatarTap"
+                      justifyContent="center"
+                      alignItems="center">
+          <Image class="avatar-image"
+                 src="{{ authAvatarUrl }}"
+                 visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
+          <Label class="avatar-initial"
+                 text="{{ authInitial }}"
+                 visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
+          <Label class="avatar-login"
+                 text="⎆"
+                 visibility="{{ authLoggedIn ? 'collapse' : 'visible' }}" />
+        </FlexboxLayout>
+      </GridLayout>
+    </ActionBar.titleView>
+  </ActionBar>
+
+  <GridLayout rows="*, auto">
+    <ScrollView row="0">
+      <StackLayout class="profile-screen" spacing="20">
+        <FlexboxLayout class="profile-avatar-shell"
+                       justifyContent="center"
+                       alignItems="center"
+                       horizontalAlignment="center"
+                       tap="onAvatarTap">
+          <Image class="profile-avatar"
+                 src="{{ authAvatarUrl }}"
+                 visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
+          <Label class="profile-avatar-fallback"
+                 text="{{ authInitial }}"
+                 visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
+        </FlexboxLayout>
+        <StackLayout class="profile-card" spacing="12">
+          <Label class="profile-name" text="{{ authDisplayName }}" />
+          <Label class="profile-email" text="{{ authEmail }}" visibility="{{ authEmail ? 'visible' : 'collapse' }}" />
+          <StackLayout visibility="{{ authProviderLabels &amp;&amp; authProviderLabels.length ? 'visible' : 'collapse' }}">
+            <Label class="profile-section" text="Linked providers" />
+            <Repeater items="{{ authProviderLabels }}">
+              <Repeater.itemTemplate>
+                <Label class="profile-provider" text="{{ $value }}" />
+              </Repeater.itemTemplate>
+            </Repeater>
+          </StackLayout>
+          <Label class="account-error"
+                 text="{{ formError || authError }}"
+                 visibility="{{ (formError || authError) ? 'visible' : 'collapse' }}"
+                 textWrap="true" />
+          <Button text="Edit display name"
+                  class="account-primary"
+                  tap="onEditDisplayName"
+                  isEnabled="{{ authLoggedIn &amp;&amp; !authLoading }}" />
+          <Button text="Sign out"
+                  class="account-signout"
+                  tap="onSignOut"
+                  isEnabled="{{ authLoggedIn &amp;&amp; !authLoading }}" />
+        </StackLayout>
+      </StackLayout>
+    </ScrollView>
+
+    <FlexboxLayout row="1" class="bottom-nav">
+      <StackLayout class="btn" tap="onNavPlay">
+        <Label text="▶️" class="icon" />
+        <Label text="PLAY" />
+      </StackLayout>
+      <StackLayout class="btn active">
+        <Label text="🏅" class="icon active" />
+        <Label text="PROFILE" />
+      </StackLayout>
+      <StackLayout class="btn" tap="onNavAbout">
+        <Label text="ℹ️" class="icon" />
+        <Label text="ABOUT" />
+      </StackLayout>
+    </FlexboxLayout>
+  </GridLayout>
+</Page>

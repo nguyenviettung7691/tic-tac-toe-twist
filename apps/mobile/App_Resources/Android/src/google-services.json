@@ -1,20 +1,21 @@
 {
   "project_info": {
-    "project_number": "000000000000",
-    "project_id": "placeholder-id",
-    "storage_bucket": "placeholder-id.appspot.com"
+    "project_number": "172853375930",
+    "project_id": "tictactoetwist-472303",
+    "storage_bucket": "tictactoetwist-472303.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:000000000000:android:placeholder",
+        "mobilesdk_app_id": "1:172853375930:android:c906c3f22bf3cf340e2383",
         "android_client_info": {
-          "package_name": "org.nativescript.mobile"
+          "package_name": "com.tictactoetwist"
         }
       },
+      "oauth_client": [],
       "api_key": [
         {
-          "current_key": "placeholder"
+          "current_key": "AIzaSyB7shJj1aOsEsIvk5pkGe6seYaRpnD8zV8"
         }
       ],
       "services": {

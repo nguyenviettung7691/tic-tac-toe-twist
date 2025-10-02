@@ -1,0 +1,16 @@
+
+.about-screen {
+  padding: 24;
+  margin: 0 16;
+}
+
+.about-heading {
+  font-size: 24;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.about-copy {
+  font-size: 14;
+  color: rgba(31, 44, 63, 0.75);
+}

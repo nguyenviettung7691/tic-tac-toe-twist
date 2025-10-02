@@ -9,6 +9,7 @@
     "@nativescript/firebase-auth": "^5.0.2",
     "@nativescript/firebase-core": "^5.0.2",
     "@nativescript/firebase-firestore": "^5.0.2",
+    "@nativescript/google-signin": "^2.1.1",
     "@nativescript/theme": "^3.1.0",
     "@ttt/engine": "file:../../packages/engine"
   },
@@ -17,5 +18,8 @@
     "@nativescript/types": "~8.9.0",
     "@nativescript/webpack": "~5.0.0",
     "typescript": "~5.4.0"
+  },
+  "nativescript": {
+    "id": "com.tictactoetwist"
   }
 }

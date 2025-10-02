@@ -11,15 +11,22 @@ import {
 } from '@nativescript/core';
 
 import { startNewGame } from '~/state/game-store';
+import { bindAuthTo } from '~/state/auth-bindings';
+import { navigateToPlay, navigateToProfile, navigateToAbout } from '~/services/navigation';
 
 import { HomeViewModel, type PowerOptionVm, type VariantOptionVm } from './home-view-model';
 
 let viewModel: HomeViewModel | null = null;
+let authUnsubscribe: (() => void) | null = null;
 
 export function onNavigatingTo(args: NavigatedData) {
   const page = args.object as Page;
   viewModel = viewModel ?? new HomeViewModel();
   page.bindingContext = viewModel;
+  viewModel.set('navActive', 'play');
+  if (!authUnsubscribe) {
+    authUnsubscribe = bindAuthTo(viewModel);
+  }
 }
 
 export function onWinLengthInfo() {
@@ -203,4 +210,32 @@ async function animateTap(target: any) {
   }
   await target.animate({ scale: { x: 0.94, y: 0.94 }, opacity: 0.9, duration: 80, curve: CoreTypes.AnimationCurve.easeIn });
   await target.animate({ scale: { x: 1, y: 1 }, opacity: 1, duration: 120, curve: CoreTypes.AnimationCurve.easeOut });
+}
+
+export function onAvatarTap() {
+  navigateToProfile(false);
+}
+
+export function onNavPlay() {
+  if (viewModel?.get('navActive') === 'play') {
+    return;
+  }
+  viewModel?.set('navActive', 'play');
+  navigateToPlay(true);
+}
+
+export function onNavProfile() {
+  if (viewModel?.get('navActive') === 'profile') {
+    return;
+  }
+  viewModel?.set('navActive', 'profile');
+  navigateToProfile(true);
+}
+
+export function onNavAbout() {
+  if (viewModel?.get('navActive') === 'about') {
+    return;
+  }
+  viewModel?.set('navActive', 'about');
+  navigateToAbout(true);
 }

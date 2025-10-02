@@ -1,0 +1,67 @@
+
+.account-screen {
+  padding: 24;
+  margin: 0 16;
+  text-align: center;
+}
+
+.account-heading {
+  font-size: 24;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.account-subheading {
+  font-size: 14;
+  color: rgba(31, 44, 63, 0.7);
+}
+
+.account-field {
+  border-width: 1;
+  border-color: var(--color-outline);
+  border-radius: 12;
+  padding: 12;
+  background-color: var(--color-sheet);
+}
+
+.account-error {
+  color: #d14343;
+  font-size: 13;
+}
+
+.account-primary {
+  background-color: var(--color-deep-blue);
+  color: white;
+  border-radius: 12;
+  padding: 12;
+  font-weight: 700;
+}
+
+.account-divider {
+  text-align: center;
+  font-size: 13;
+  color: rgba(31, 44, 63, 0.7);
+}
+
+.account-social {
+  border-radius: 12;
+  padding: 12;
+  font-weight: 600;
+  color: var(--color-ink);
+  background-color: var(--color-sheet);
+  border-width: 1;
+  border-color: var(--color-outline);
+  margin-top: 20;
+}
+.account-social.google {
+  border-color: #f44242;
+  color: #f44242;
+  font-size: 18;
+}
+
+
+.account-link {
+  text-align: center;
+  color: var(--color-deep-blue);
+  font-weight: 600;
+}

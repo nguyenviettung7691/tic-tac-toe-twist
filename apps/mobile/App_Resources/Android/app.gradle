@@ -1,6 +1,7 @@
+apply plugin: 'com.google.gms.google-services'
 // You can add your native dependencies here
 dependencies {
-//  implementation 'androidx.multidex:multidex:2.0.1'
+  implementation 'androidx.multidex:multidex:2.0.1'
 }
 
 android {
@@ -9,6 +10,8 @@ android {
   // ndkVersion ""
 
   defaultConfig {
+    applicationId "com.tictactoetwist"
+    multiDexEnabled true
     minSdkVersion 23
     targetSdkVersion 34
 
@@ -23,3 +26,5 @@ android {
     additionalParameters "--no-version-vectors"
   }
 }
+
+

@@ -1,0 +1,62 @@
+
+.profile-screen {
+  padding: 24;
+  margin: 0 16;
+}
+
+.profile-avatar-shell {
+  width: 128;
+  height: 128;
+  border-radius: 64;
+  background-color: rgba(37, 123, 222, 0.08);
+}
+
+.profile-avatar {
+  width: 120;
+  height: 120;
+  border-radius: 60;
+}
+
+.profile-avatar-fallback {
+  font-size: 36;
+  font-weight: 700;
+  color: var(--color-deep-blue);
+}
+
+.profile-card {
+  background-color: var(--color-sheet);
+  border-radius: 16;
+  padding: 20;
+}
+
+.profile-name {
+  font-size: 24;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.profile-email {
+  font-size: 14;
+  color: rgba(31, 44, 63, 0.7);
+}
+
+.profile-section {
+  font-size: 13;
+  font-weight: 600;
+  color: rgba(31, 44, 63, 0.7);
+}
+
+.profile-provider {
+  font-size: 13;
+  color: var(--color-ink);
+}
+
+.account-signout {
+  border-radius: 12;
+  padding: 12;
+  font-weight: 600;
+  color: #d14343;
+  border-width: 1;
+  border-color: rgba(209, 67, 67, 0.3);
+  background-color: rgba(209, 67, 67, 0.08);
+}

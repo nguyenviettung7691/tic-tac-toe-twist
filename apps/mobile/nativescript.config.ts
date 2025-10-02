@@ -1,7 +1,7 @@
 import { NativeScriptConfig } from '@nativescript/core';
 
 export default {
-  id: 'org.nativescript.mobile',
+  id: 'com.tictactoetwist',
   appPath: 'app',
   appResourcesPath: 'App_Resources',
   android: {

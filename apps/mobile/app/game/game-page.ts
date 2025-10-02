@@ -13,6 +13,8 @@ import type { Player } from '@ttt/engine';
 
 import type { GameState, Move } from '~/state/game-store';
 import { getSnapshot, playerMove, rematch, subscribe, type GameSnapshot } from '~/state/game-store';
+import { bindAuthTo } from '~/state/auth-bindings';
+import { navigateToPlay, navigateToProfile, navigateToAbout } from '~/services/navigation';
 
 interface BoardCellVM {
   r: number;
@@ -32,6 +34,7 @@ let unsubscribe: (() => void) | null = null;
 let currentPage: Page | null = null;
 let confettiTimer: ReturnType<typeof setTimeout> | null = null;
 let replayTimer: ReturnType<typeof setTimeout> | null = null;
+let authBindingDetach: (() => void) | null = null;
 
 interface PendingDoubleMove {
   armed: boolean;
@@ -134,6 +137,10 @@ export function onNavigatingTo(args: NavigatedData) {
   resetPendingBomb();
   viewModel = viewModel ?? createViewModel();
   page.bindingContext = viewModel;
+  viewModel.set('navActive', 'play');
+  if (!authBindingDetach) {
+    authBindingDetach = bindAuthTo(viewModel);
+  }
 
   unsubscribe?.();
   unsubscribe = subscribe((snapshot) => updateViewModel(viewModel!, snapshot));
@@ -1218,4 +1225,32 @@ function formatResultDifficulty(value: GameSnapshot['settings']['difficulty']): 
     default:
       return 'Played on Balanced difficulty';
   }
+}
+
+export function onAvatarTap() {
+  navigateToProfile(false);
+}
+
+export function onNavPlay() {
+  if (viewModel?.get('navActive') === 'play') {
+    return;
+  }
+  viewModel?.set('navActive', 'play');
+  navigateToPlay(true);
+}
+
+export function onNavProfile() {
+  if (viewModel?.get('navActive') === 'profile') {
+    return;
+  }
+  viewModel?.set('navActive', 'profile');
+  navigateToProfile(true);
+}
+
+export function onNavAbout() {
+  if (viewModel?.get('navActive') === 'about') {
+    return;
+  }
+  viewModel?.set('navActive', 'about');
+  navigateToAbout(true);
 }

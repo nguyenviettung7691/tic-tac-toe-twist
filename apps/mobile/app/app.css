@@ -31,6 +31,7 @@ ListPicker {
 .app-bar {
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   border-bottom-width: 1.5;
   border-bottom-color: rgba(37, 123, 222, 0.25);
 }
@@ -38,6 +39,7 @@ ListPicker {
 .brand {
   flex-direction: row;
   align-items: center;
+  justify-content: center;
   gap: 12;
 }
 
@@ -57,6 +59,31 @@ ListPicker {
   font-size: 24;
   color: var(--color-deep-blue);
   font-weight: 600;
+}
+
+.app-bar-grid {
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding-right: 12;
+}
+
+.avatar-container {
+  align-items: center;
+  justify-content: center;
+}
+.avatar-image {
+  width: 36;
+  height: 36;
+  border-radius: 18;
+}
+.avatar-initial,
+.avatar-login {
+  font-size: 30;
+  font-weight: 700;
+  color: var(--color-deep-blue);
+  text-align: center;
 }
 
 .icon-button {

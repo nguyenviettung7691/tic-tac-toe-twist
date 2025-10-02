@@ -1,0 +1,63 @@
+<Page navigatingTo="onNavigatingTo" navigatingFrom="onNavigatingFrom" xmlns="http://schemas.nativescript.org/tns.xsd">
+  <ActionBar class="app-bar" flat="true">
+    <ActionBar.titleView>
+      <GridLayout columns="auto,*" class="app-bar-grid">
+        <FlexboxLayout col="0" class="brand">
+          <Image class="brand-icon" src="~/assets/logo.png" />
+          <Label class="brand-title">
+            <FormattedString>
+              <Span text="Tic-Tac-Toe" />
+              <Span text="Twist" class="twist" />
+            </FormattedString>
+          </Label>
+        </FlexboxLayout>
+        <FlexboxLayout col="1"
+                      class="avatar-container"
+                      horizontalAlignment="right"
+                      verticalAlignment="center"
+                      tap="onNavProfile"
+                      justifyContent="center"
+                      alignItems="center">
+          <Image class="avatar-image"
+                 src="{{ authAvatarUrl }}"
+                 visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
+          <Label class="avatar-initial"
+                 text="{{ authInitial }}"
+                 visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
+          <Label class="avatar-login"
+                 text="⎆"
+                 visibility="{{ authLoggedIn ? 'collapse' : 'visible' }}" />
+        </FlexboxLayout>
+      </GridLayout>
+    </ActionBar.titleView>
+  </ActionBar>
+
+  <GridLayout rows="*, auto">
+    <ScrollView row="0">
+      <StackLayout class="about-screen" spacing="16">
+        <Label class="about-heading" text="About Tic-Tac-Toe Twist" />
+        <Label class="about-copy"
+               textWrap="true"
+               text="Experiment with wild Tic-Tac-Toe variants, play through custom rulesets, and challenge the adaptive AI. More twists and social features are on the way." />
+        <Label class="about-copy"
+        textWrap="true"
+        text="Author: Nguyen Viet Tung - nvtung.harry@gmail.com" />
+      </StackLayout>
+    </ScrollView>
+
+    <FlexboxLayout row="1" class="bottom-nav">
+      <StackLayout class="btn" tap="onNavPlay">
+        <Label text="▶️" class="icon" />
+        <Label text="PLAY" />
+      </StackLayout>
+      <StackLayout class="btn" tap="onNavProfile">
+        <Label text="🏅" class="icon" />
+        <Label text="PROFILE" />
+      </StackLayout>
+      <StackLayout class="btn active">
+        <Label text="ℹ️" class="icon active" />
+        <Label text="ABOUT" />
+      </StackLayout>
+    </FlexboxLayout>
+  </GridLayout>
+</Page>

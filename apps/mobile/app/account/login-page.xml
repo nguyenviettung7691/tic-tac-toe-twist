@@ -1,0 +1,69 @@
+<Page navigatingTo="onNavigatingTo" xmlns="http://schemas.nativescript.org/tns.xsd">
+  <ActionBar class="app-bar" flat="true">
+    <ActionBar.titleView>
+      <GridLayout columns="auto,*" class="app-bar-grid">
+        <FlexboxLayout col="0" class="brand">
+          <Image class="brand-icon" src="~/assets/logo.png" />
+          <Label class="brand-title">
+            <FormattedString>
+              <Span text="Tic-Tac-Toe" />
+              <Span text="Twist" class="twist" />
+            </FormattedString>
+          </Label>
+        </FlexboxLayout>
+        <FlexboxLayout col="1"
+                      class="avatar-container"
+                      horizontalAlignment="right"
+                      verticalAlignment="center"
+                      tap="onAvatarTap"
+                      justifyContent="center"
+                      alignItems="center">
+          <Image class="avatar-image"
+                 src="{{ authAvatarUrl }}"
+                 visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
+          <Label class="avatar-initial"
+                 text="{{ authInitial }}"
+                 visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
+          <Label class="avatar-login"
+                 text="⎆"
+                 visibility="{{ authLoggedIn ? 'collapse' : 'visible' }}" />
+        </FlexboxLayout>
+      </GridLayout>
+    </ActionBar.titleView>
+  </ActionBar>
+
+  <GridLayout rows="*, auto">
+    <ScrollView row="0">
+      <StackLayout class="account-screen" spacing="16">
+        <Label class="account-heading" text="Welcome back!" />
+        <Label class="account-subheading" text="By signing in you can:" textWrap="true" />
+        <Label class="account-subheading" text="📝 Keep track of your matches and achievements." textWrap="true" />
+        <Label class="account-subheading" text="🤵 Play against other human opponents." textWrap="true" />
+        <Label class="account-subheading" text="🏆 Personal profile for showoff." textWrap="true" />
+        <Label class="account-error"
+               text="{{ formError || authError }}"
+               visibility="{{ (formError || authError) ? 'visible' : 'collapse' }}"
+               textWrap="true" />
+        <Button text="Continue with Google"
+                class="account-social google"
+                tap="onGoogleTap"
+                isEnabled="{{ !authLoading }}" />
+      </StackLayout>
+    </ScrollView>
+
+    <FlexboxLayout row="1" class="bottom-nav">
+      <StackLayout class="btn" tap="onNavPlay">
+        <Label text="▶️" class="icon" />
+        <Label text="PLAY" />
+      </StackLayout>
+      <StackLayout class="btn active">
+        <Label text="🏅" class="icon active" />
+        <Label text="PROFILE" />
+      </StackLayout>
+      <StackLayout class="btn" tap="onNavAbout">
+        <Label text="ℹ️" class="icon" />
+        <Label text="ABOUT" />
+      </StackLayout>
+    </FlexboxLayout>
+  </GridLayout>
+</Page>

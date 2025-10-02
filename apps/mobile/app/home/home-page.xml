@@ -1,8 +1,8 @@
 <Page navigatingTo="onNavigatingTo" xmlns="http://schemas.nativescript.org/tns.xsd">
   <ActionBar class="app-bar" flat="true">
     <ActionBar.titleView>
-      <GridLayout columns="*,auto">
-        <FlexboxLayout class="brand">
+      <GridLayout columns="auto,*" class="app-bar-grid">
+        <FlexboxLayout col="0" class="brand">
           <Image class="brand-icon" src="~/assets/logo.png" />
           <Label class="brand-title">
             <FormattedString>
@@ -10,6 +10,11 @@
               <Span text="Twist" class="twist" />
             </FormattedString>
           </Label>
+        </FlexboxLayout>
+        <FlexboxLayout col="1" class="avatar-container" horizontalAlignment="right" verticalAlignment="center" tap="onAvatarTap" justifyContent="center" alignItems="center">
+          <Image class="avatar-image" src="{{ authAvatarUrl }}" visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
+          <Label class="avatar-initial" text="{{ authInitial }}" visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
+          <Label class="avatar-login" text="⎆" visibility="{{ authLoggedIn ? 'collapse' : 'visible' }}" />
         </FlexboxLayout>
       </GridLayout>
     </ActionBar.titleView>
@@ -134,11 +139,11 @@
           <Label text="▶️" class="icon active" />
           <Label text="PLAY" />
         </StackLayout>
-        <StackLayout class="btn">
+        <StackLayout class="btn" tap="onNavProfile">
           <Label text="🏅" class="icon" />
           <Label text="PROFILE" />
         </StackLayout>
-        <StackLayout class="btn">
+        <StackLayout class="btn" tap="onNavAbout">
           <Label text="ℹ️" class="icon" />
           <Label text="ABOUT" />
         </StackLayout>
