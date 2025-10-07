@@ -35,6 +35,10 @@
       </StackLayout>
 
       <StackLayout class="match-detail-actions" spacing="12">
+        <Button class="match-detail-primary"
+                text="Watch replay"
+                tap="onWatchReplay"
+                isEnabled="{{ hasReplay }}" />
         <Button class="match-detail-primary" text="Start match again" tap="onStartAgain" />
         <Button class="match-detail-danger" text="Delete match" tap="onDeleteMatch" />
       </StackLayout>

@@ -12,7 +12,16 @@ import {
 import type { Player } from '@ttt/engine';
 
 import type { GameState, Move } from '~/state/game-store';
-import { getSnapshot, playerMove, rematch, subscribe, type GameSnapshot } from '~/state/game-store';
+import {
+  activateReplay,
+  clearReplayMode,
+  consumeQueuedReplay,
+  getSnapshot,
+  playerMove,
+  rematch,
+  subscribe,
+  type GameSnapshot,
+} from '~/state/game-store';
 import { bindAuthTo } from '~/state/auth-bindings';
 import { navigateToPlay, navigateToProfile, navigateToAbout } from '~/services/navigation';
 import { findWinningLine, formatReplayEntry } from '~/utils/game-format';
@@ -89,6 +98,9 @@ function pendingFirstSelectionKey(): string | null {
 }
 
 function canPlayerArmDoubleMove(snapshot: GameSnapshot): boolean {
+  if (snapshot.replayContext) {
+    return false;
+  }
   const { game, busy } = snapshot;
   if (!game || busy || game.winner) {
     return false;
@@ -103,6 +115,9 @@ function canPlayerArmDoubleMove(snapshot: GameSnapshot): boolean {
 }
 
 function canPlayerArmLaneShift(snapshot: GameSnapshot): boolean {
+  if (snapshot.replayContext) {
+    return false;
+  }
   const { game, busy } = snapshot;
   if (!game || busy || game.winner) {
     return false;
@@ -117,6 +132,9 @@ function canPlayerArmLaneShift(snapshot: GameSnapshot): boolean {
 }
 
 function canPlayerArmBomb(snapshot: GameSnapshot): boolean {
+  if (snapshot.replayContext) {
+    return false;
+  }
   const { game, busy } = snapshot;
   if (!game || busy || game.winner) {
     return false;
@@ -146,6 +164,11 @@ export function onNavigatingTo(args: NavigatedData) {
   unsubscribe?.();
   unsubscribe = subscribe((snapshot) => updateViewModel(viewModel!, snapshot));
 
+  const queuedReplay = consumeQueuedReplay();
+  if (queuedReplay) {
+    activateReplay(queuedReplay);
+  }
+
   const snapshot = getSnapshot();
   if (!snapshot.game) {
     viewModel.set('statusText', 'Head back to the home screen to start a new match.');
@@ -155,6 +178,7 @@ export function onNavigatingTo(args: NavigatedData) {
 export function onNavigatingFrom() {
   unsubscribe?.();
   unsubscribe = null;
+  clearReplayMode();
   stopReplay();
   clearConfetti(currentPage);
   resetPendingLaneShift();
@@ -169,6 +193,9 @@ export function onCellTap(args: GestureEventData) {
     return;
   }
   const snapshot = getSnapshot();
+  if (snapshot.replayContext) {
+    return;
+  }
   if (pendingLaneShift.armed) {
     void handleLaneShiftTap(cell, snapshot);
     return;
@@ -185,6 +212,9 @@ export function onCellTap(args: GestureEventData) {
 }
 
 function handleDoubleMoveTap(cell: BoardCellVM, snapshot: GameSnapshot) {
+  if (snapshot.replayContext) {
+    return;
+  }
   const { game } = snapshot;
   if (!viewModel || !game) {
     resetPendingDoubleMove();
@@ -235,6 +265,9 @@ function handleDoubleMoveTap(cell: BoardCellVM, snapshot: GameSnapshot) {
 
 async function handleLaneShiftTap(cell: BoardCellVM, snapshot: GameSnapshot) {
   if (!pendingLaneShift.armed) {
+    return;
+  }
+  if (snapshot.replayContext) {
     return;
   }
   const { game } = snapshot;
@@ -294,6 +327,9 @@ async function handleLaneShiftTap(cell: BoardCellVM, snapshot: GameSnapshot) {
 
 function handleBombTap(cell: BoardCellVM, snapshot: GameSnapshot) {
   if (!pendingBomb.armed) {
+    return;
+  }
+  if (snapshot.replayContext) {
     return;
   }
   const { game } = snapshot;
@@ -382,6 +418,9 @@ export function onOtpPowerAction(args: EventData) {
     return;
   }
   const snapshot = getSnapshot();
+  if (snapshot.replayContext) {
+    return;
+  }
 
   if (context.id === 'doubleMove') {
     if (pendingDoubleMove.armed) {
@@ -460,13 +499,23 @@ function createViewModel() {
   vm.set('resultWinLengthLabel', '');
   vm.set('replayLogs', [] as { text: string }[]);
   vm.set('replayLogsVisible', false);
+  vm.set('replayMode', false);
+  vm.set('replaySourceLabel', '');
+  vm.set('replaySourceId', '');
   vm.set('otpPowerItems', [] as any[]);
   return vm;
 }
 function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
-  const { game, busy, settings } = snapshot;
+  const { game, busy, settings, replayContext } = snapshot;
+  const previousReplaySourceId = (vm.get('replaySourceId') as string) || '';
+  const isReplay = !!replayContext;
+  const currentReplaySourceId = replayContext ? replayContext.matchId : '';
+
   vm.set('busy', busy);
-  const aiThinking = busy && settings.vsAi;
+  vm.set('replayMode', isReplay);
+  vm.set('replaySourceLabel', replayContext ? formatReplaySourceLabel(replayContext) : '');
+
+  const aiThinking = busy && settings.vsAi && !isReplay;
   vm.set('aiThinkingVisible', aiThinking);
   vm.set('aiThinkingMessage', aiThinking ? 'AI is thinking...' : '');
 
@@ -477,6 +526,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('boardRows', []);
     vm.set('variantSummary', [] as string[]);
     vm.set('otpSummary', '');
+    vm.set('modeSummary', [] as string[]);
     vm.set('difficultyLabel', '');
     vm.set('statusText', 'Head back to the home screen to start a new match.');
     vm.set('resultVisible', false);
@@ -484,6 +534,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultSummary', '');
     vm.set('resultVariantSummary', [] as string[]);
     vm.set('resultOtpSummary', [] as string[]);
+    vm.set('resultModeSummary', [] as string[]);
     vm.set('resultDifficultyLabel', '');
     vm.set('resultWinLengthLabel', '');
     vm.set('confettiVisible', false);
@@ -492,18 +543,18 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('replayStep', 0);
     vm.set('replayTotal', 0);
     vm.set('winLengthLabel', '');
+    vm.set('replaySourceId', '');
     clearReplayLogs(vm);
     clearConfetti(currentPage);
     return;
   }
-
 
   vm.set('boardClass', `board board-${game.board.length}`);
   vm.set('variantSummary', formatVariantSummary(game));
   vm.set('otpSummary', formatOtpSummary(game));
   vm.set('modeSummary', formatGameModeSummary(game));
   vm.set('difficultyLabel', formatDifficulty(settings.difficulty));
-  vm.set('statusText', buildStatusText(game, busy));
+  vm.set('statusText', buildStatusText(game, busy, isReplay));
   vm.set('replayTotal', game.moves.length);
   vm.set('winLengthLabel', formatWinLength(game));
   if (!vm.get('replayActive')) {
@@ -513,7 +564,7 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
 
   const winningLine = game.winner && game.winner !== 'Draw' ? findWinningLine(game) : null;
   const winningCells = winningLine ? new Set(winningLine.map(({ r, c }) => `${r}:${c}`)) : undefined;
-  vm.set('boardRows', buildBoardRows(game, busy, winningCells));
+  vm.set('boardRows', buildBoardRows(game, busy, winningCells, isReplay));
 
   const hasResult = !!game.winner;
   vm.set('resultVisible', hasResult);
@@ -526,26 +577,47 @@ function updateViewModel(vm: Observable, snapshot: GameSnapshot) {
     vm.set('resultDifficultyLabel', formatResultDifficulty(settings.difficulty));
     vm.set('resultWinLengthLabel', formatWinLength(game));
     const playerWon = game.winner === 'X';
-    vm.set('confettiVisible', playerWon);
-    if (playerWon) {
+    const shouldCelebrate = playerWon && !isReplay;
+    vm.set('confettiVisible', shouldCelebrate);
+    if (shouldCelebrate) {
       triggerConfetti(currentPage);
     } else {
       clearConfetti(currentPage);
     }
   } else {
-    stopReplay();
     vm.set('resultTitle', '');
     vm.set('resultSummary', '');
     vm.set('resultVariantSummary', [] as string[]);
     vm.set('resultOtpSummary', [] as string[]);
+    vm.set('resultModeSummary', [] as string[]);
     vm.set('resultDifficultyLabel', '');
     vm.set('resultWinLengthLabel', '');
     vm.set('confettiVisible', false);
-    clearConfetti(currentPage);
+    if (!isReplay) {
+      clearConfetti(currentPage);
+    }
   }
+
+  if (isReplay) {
+    if (currentReplaySourceId && currentReplaySourceId !== previousReplaySourceId) {
+      stopReplay();
+      startReplay(vm, game);
+    }
+  } else if (previousReplaySourceId) {
+    stopReplay();
+  }
+
+  vm.set('replaySourceId', currentReplaySourceId);
 }
 
 function syncOtpPowerUi(vm: Observable, snapshot: GameSnapshot) {
+  if (snapshot.replayContext) {
+    resetPendingDoubleMove();
+    resetPendingLaneShift();
+    resetPendingBomb();
+    vm.set('otpPowerItems', []);
+    return;
+  }
   const { game } = snapshot;
   if (!game) {
     resetPendingDoubleMove();
@@ -628,8 +700,13 @@ function syncOtpPowerUi(vm: Observable, snapshot: GameSnapshot) {
   vm.set('otpPowerItems', items);
 }
 
-function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<string>): BoardRowVM[] {
-  const isHumanTurn = !busy && !game.winner && game.current === 'X';
+function buildBoardRows(
+  game: GameState,
+  busy: boolean,
+  winningCells?: Set<string>,
+  readOnly = false,
+): BoardRowVM[] {
+  const isHumanTurn = !readOnly && !busy && !game.winner && game.current === 'X';
   const laneShiftAvailable = isHumanTurn && game.config.laneShift && canUseLaneShift(game);
   const laneShiftArmed = laneShiftAvailable && pendingLaneShift.armed;
   const legalMovesList = isHumanTurn && !laneShiftArmed ? legalMoves(game) : [];
@@ -745,6 +822,10 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
         }
       }
 
+      if (readOnly) {
+        interactive = false;
+      }
+
       if (interactive) {
         classes.push('cell-legal');
       }
@@ -761,7 +842,36 @@ function buildBoardRows(game: GameState, busy: boolean, winningCells?: Set<strin
   }));
 }
 
-function buildStatusText(game: GameState, busy: boolean): string {
+function formatReplaySourceLabel(context: GameSnapshot['replayContext']): string {
+  if (!context) {
+    return '';
+  }
+  const date = new Date(context.createdAtIso);
+  let formatted = date.toISOString();
+  try {
+    formatted = new Intl.DateTimeFormat(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  } catch (_) {
+    formatted = date.toLocaleString();
+  }
+  return context.title ? `${context.title} • ${formatted}` : `Saved match • ${formatted}`;
+}
+
+function buildStatusText(game: GameState, busy: boolean, isReplay: boolean): string {
+  if (isReplay) {
+    if (game.winner === 'Draw') {
+      return 'Watching a drawn match replay.';
+    }
+    if (game.winner === 'X') {
+      return 'Watching your winning replay.';
+    }
+    if (game.winner === 'O') {
+      return 'Watching the opponent’s winning replay.';
+    }
+    return 'Watching saved match replay.';
+  }
   if (game.config.laneShift && pendingLaneShift.armed && game.current === 'X' && !game.winner) {
     return 'Lane Shift armed. Tap a cell on the lane.';
   }

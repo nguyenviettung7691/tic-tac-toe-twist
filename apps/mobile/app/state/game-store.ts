@@ -8,7 +8,7 @@ import {
   isLaneShiftLegal,
   legalMoves,
 } from '@ttt/engine';
-import type { Difficulty, GameState, Move, VariantConfig } from '@ttt/engine';
+import type { Difficulty, GameState, Move, PowerUsage, VariantConfig } from '@ttt/engine';
 import { getApiBaseUrl, requestMove } from '~/services/api';
 import { getAuthState } from '~/state/auth-store';
 import { saveCompletedMatch } from '~/state/match-store';
@@ -30,11 +30,27 @@ export interface GameSetup {
   vsAi: boolean;
 }
 
+export interface ReplayContext {
+  source: 'saved-match';
+  matchId: string;
+  createdAtIso: string;
+  title?: string;
+}
+
+export interface ReplayLoad {
+  matchId: string;
+  createdAtIso: string;
+  title?: string;
+  game: GameState;
+  setup: GameSetup;
+}
+
 export interface GameSnapshot {
   game: GameState | null;
   settings: GameSetup;
   busy: boolean;
   lastResult: GameState | null;
+  replayContext: ReplayContext | null;
 }
 
 type Listener = (snapshot: GameSnapshot) => void;
@@ -59,6 +75,8 @@ let currentGame: GameState | null = null;
 let lastFinishedGame: GameState | null = null;
 let busy = false;
 let aiThinkTimer: ReturnType<typeof setTimeout> | null = null;
+let pendingReplay: ReplayLoad | null = null;
+let activeReplay: ReplayContext | null = null;
 
 const listeners = new Set<Listener>();
 const ALLOWED_BOARD_SIZES: GameSetup['boardSize'][] = [3, 4, 5, 6];
@@ -113,6 +131,7 @@ export function getSnapshot(): GameSnapshot {
     settings: { ...currentSetup },
     busy,
     lastResult: lastFinishedGame,
+    replayContext: activeReplay ? { ...activeReplay } : null,
   };
 }
 
@@ -129,6 +148,8 @@ export function startNewGame(setup: GameSetup): GameState {
     clearTimeout(aiThinkTimer);
     aiThinkTimer = null;
   }
+  pendingReplay = null;
+  activeReplay = null;
   const normalized = normalizeSetup(setup);
   currentSetup = { ...normalized };
   busy = false;
@@ -142,7 +163,44 @@ export function rematch(): GameState | null {
   return startNewGame(currentSetup);
 }
 
+export function queueReplay(load: ReplayLoad) {
+  pendingReplay = sanitizeReplayLoad(load);
+}
+
+export function consumeQueuedReplay(): ReplayLoad | null {
+  if (!pendingReplay) {
+    return null;
+  }
+  const payload = sanitizeReplayLoad(pendingReplay);
+  pendingReplay = null;
+  return payload;
+}
+
+export function activateReplay(load: ReplayLoad) {
+  const sanitized = sanitizeReplayLoad(load);
+  pendingReplay = null;
+  activeReplay = {
+    source: 'saved-match',
+    matchId: sanitized.matchId,
+    createdAtIso: sanitized.createdAtIso,
+    title: sanitized.title,
+  };
+  currentSetup = { ...normalizeSetup(sanitized.setup) };
+  currentGame = withWinner(cloneGameState(sanitized.game));
+  lastFinishedGame = currentGame;
+  busy = false;
+  notifyListeners();
+}
+
+export function clearReplayMode() {
+  pendingReplay = null;
+  activeReplay = null;
+}
+
 export function playerMove(move: Move): GameState | null {
+  if (activeReplay) {
+    return currentGame;
+  }
   if (!currentGame || currentGame.winner || busy) return currentGame;
 
   if (!isMoveLegal(currentGame, move)) {
@@ -174,6 +232,8 @@ export function reset(): void {
     clearTimeout(aiThinkTimer);
     aiThinkTimer = null;
   }
+  pendingReplay = null;
+  activeReplay = null;
   currentSetup = { ...defaultSetup };
   currentGame = null;
   lastFinishedGame = null;
@@ -199,11 +259,46 @@ function normalizeSetup(setup: GameSetup): GameSetup {
   };
 }
 
+function sanitizeReplayLoad(load: ReplayLoad): ReplayLoad {
+  return {
+    matchId: load.matchId,
+    createdAtIso: load.createdAtIso,
+    title: load.title,
+    setup: { ...load.setup },
+    game: cloneGameState(load.game),
+  };
+}
+
+function cloneGameState(state: GameState): GameState {
+  return {
+    board: state.board.map((row) => row.slice()),
+    current: state.current,
+    config: { ...state.config },
+    moves: state.moves.map((move) => ({ ...move })),
+    winner: state.winner ?? null,
+    lastMove: state.lastMove ? { ...state.lastMove } : undefined,
+    powers: clonePowersState(state.powers),
+  };
+}
+
+function clonePowersState(powers: PowerUsage): PowerUsage {
+  return {
+    doubleMove: { ...powers.doubleMove },
+    laneShift: { ...powers.laneShift },
+    bomb: { ...powers.bomb },
+  };
+}
+
 
 function scheduleAiMove() {
   if (aiThinkTimer !== null) {
     clearTimeout(aiThinkTimer);
     aiThinkTimer = null;
+  }
+  if (activeReplay) {
+    busy = false;
+    notifyListeners();
+    return;
   }
 
   aiThinkTimer = setTimeout(() => {
@@ -230,6 +325,12 @@ function scheduleAiMove() {
           config: pendingState.config,
           difficulty,
         });
+
+        if (activeReplay) {
+          busy = false;
+          notifyListeners();
+          return;
+        }
 
         const move = response?.move;
         console.info('[ai] Received Genkit response', {
@@ -294,6 +395,9 @@ function notifyListeners() {
 }
 
 function applyMoveAndUpdate(move: Move) {
+  if (activeReplay) {
+    return;
+  }
   if (!currentGame) {
     return;
   }

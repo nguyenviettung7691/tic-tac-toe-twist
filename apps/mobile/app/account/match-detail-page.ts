@@ -1,8 +1,9 @@
 import { Dialogs, Frame, NavigatedData, Observable, Page } from '@nativescript/core'
+import type { GameState, PowerUsage, VariantConfig } from '@ttt/engine'
 
 import { getAuthState } from '~/state/auth-store'
 import { deleteMatch, getMatch, type StoredMatch } from '~/state/match-store'
-import { startNewGame } from '~/state/game-store'
+import { queueReplay, startNewGame } from '~/state/game-store'
 import { formatReplayEntry } from '~/utils/game-format'
 import { navigateToLogin } from '~/services/navigation'
 
@@ -89,6 +90,51 @@ function powerTags(setup: StoredMatch['setup']): string[] {
   return tags
 }
 
+function cloneReplayPowers(powers: PowerUsage | undefined): PowerUsage {
+  const base: PowerUsage = {
+    doubleMove: { X: false, O: false },
+    laneShift: { X: false, O: false },
+    bomb: { X: false, O: false },
+  }
+  if (!powers) {
+    return base
+  }
+  return {
+    doubleMove: { ...base.doubleMove, ...powers.doubleMove },
+    laneShift: { ...base.laneShift, ...powers.laneShift },
+    bomb: { ...base.bomb, ...powers.bomb },
+  }
+}
+
+function deriveVariantConfig(game: StoredMatch['game'], setup: StoredMatch['setup']): VariantConfig {
+  const base: VariantConfig = {
+    boardSize: setup.boardSize,
+    winLength: setup.winLength,
+    misere: setup.misere,
+    gravity: setup.gravity,
+    wrap: setup.wrap,
+    randomBlocks: setup.randomBlocks ? 3 : 0,
+    doubleMove: setup.doubleMovePower,
+    laneShift: setup.laneShiftPower,
+    allowRowColShift: false,
+    bomb: setup.bombPower,
+    chaosMode: setup.chaosMode,
+  }
+  return { ...base, ...(game.config ?? {}) }
+}
+
+function toGameState(game: StoredMatch['game'], setup: StoredMatch['setup']): GameState {
+  return {
+    board: (game.board ?? []).map((row) => (Array.isArray(row) ? row.slice() : [])),
+    current: game.current === 'O' ? 'O' : 'X',
+    config: deriveVariantConfig(game, setup),
+    moves: (game.moves ?? []).map((move) => ({ ...move })),
+    winner: game.winner ?? null,
+    lastMove: game.lastMove ? { ...game.lastMove } : undefined,
+    powers: cloneReplayPowers(game.powers),
+  }
+}
+
 function buildReplaySteps(match: StoredMatch): string[] {
   const moves = match.game.moves ?? []
   const total = moves.length
@@ -110,17 +156,17 @@ function formatResultLabel(match: StoredMatch): string {
 }
 
 function formatSummary(match: StoredMatch): string {
-  const parts: string[] = []
+  const segments: string[] = []
   const winner = match.resultWinner
   if (!winner || winner === 'Draw') {
-    parts.push('Result: Draw')
+    segments.push('Result: Draw')
   } else if (winner === 'X') {
-    parts.push('Winner: You (X)')
+    segments.push('Winner: You (X)')
   } else {
-    parts.push('Winner: Opponent (O)')
+    segments.push('Winner: Opponent (O)')
   }
-  parts.push(match.movesCount === 1 ? '1 move' : `${match.movesCount} moves`)
-  return parts.join(' · ')
+  segments.push(match.movesCount === 1 ? '1 move' : `${match.movesCount} moves`)
+  return segments.join(' · ')
 }
 
 function formatOpponent(match: StoredMatch): string {
@@ -218,6 +264,21 @@ export function onBack() {
   Frame.topmost()?.goBack()
 }
 
+export function onWatchReplay() {
+  if (!currentMatch) {
+    return
+  }
+  const game = toGameState(currentMatch.game, currentMatch.setup)
+  queueReplay({
+    matchId: currentMatch.id,
+    createdAtIso: currentMatch.createdAtIso,
+    title: currentMatch.vsAi ? 'vs AI match' : 'vs Human match',
+    setup: { ...currentMatch.setup },
+    game,
+  })
+  Frame.topmost()?.navigate('game/game-page')
+}
+
 export function onStartAgain() {
   if (!currentMatch) {
     return
@@ -239,7 +300,7 @@ export async function onDeleteMatch() {
   if (!confirmed) {
     return
   }
-  const success = deleteMatch(currentUserId, currentMatch.id)
+  const success = await deleteMatch(currentUserId, currentMatch.id)
   if (!success) {
     await Dialogs.alert({
       title: 'Unable to delete',
@@ -253,5 +314,6 @@ export async function onDeleteMatch() {
     message: 'The match has been removed from your history.',
     okButtonText: 'OK',
   })
+  currentMatch = null
   Frame.topmost()?.goBack()
 }
