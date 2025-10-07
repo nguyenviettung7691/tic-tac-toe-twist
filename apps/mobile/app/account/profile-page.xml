@@ -51,10 +51,10 @@
           <Label class="profile-name" text="{{ authDisplayName }}" />
           <Label class="profile-email" text="{{ authEmail }}" visibility="{{ authEmail ? 'visible' : 'collapse' }}" />
           <StackLayout visibility="{{ authProviderLabels &amp;&amp; authProviderLabels.length ? 'visible' : 'collapse' }}">
-            <Label class="profile-section" text="Linked providers" />
+            <Label class="profile-section" text="Linked providers:" />
             <Repeater items="{{ authProviderLabels }}">
               <Repeater.itemTemplate>
-                <Label class="profile-provider" text="{{ $value }}" />
+                <Label class="profile-provider" text="{{ '‣' + $value }}" />
               </Repeater.itemTemplate>
             </Repeater>
           </StackLayout>

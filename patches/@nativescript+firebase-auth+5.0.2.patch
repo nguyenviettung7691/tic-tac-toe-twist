@@ -1,0 +1,77 @@
+diff --git a/node_modules/@nativescript/firebase-auth/platforms/android/build.gradle b/node_modules/@nativescript/firebase-auth/platforms/android/build.gradle
+new file mode 100644
+index 0000000..9789e92
+--- /dev/null
++++ b/node_modules/@nativescript/firebase-auth/platforms/android/build.gradle
+@@ -0,0 +1,71 @@
++import org.gradle.api.JavaVersion
++
++buildscript {
++    repositories {
++        google()
++        mavenCentral()
++    }
++    dependencies {
++        def androidBuildTools = project.hasProperty("androidBuildToolsVersion") ? project.androidBuildToolsVersion : (project.hasProperty("NS_DEFAULT_ANDROID_BUILD_TOOLS_VERSION") ? project.NS_DEFAULT_ANDROID_BUILD_TOOLS_VERSION : "8.12.1")
++        def kotlinVersion = project.hasProperty("kotlinVersion") ? project.kotlinVersion : (project.hasProperty("ns_default_kotlin_version") ? project.ns_default_kotlin_version : "2.2.20")
++        classpath "com.android.tools.build:gradle:${androidBuildTools}"
++        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:${kotlinVersion}"
++    }
++}
++
++apply plugin: "com.android.library"
++apply plugin: "kotlin-android"
++
++repositories {
++    google()
++    mavenCentral()
++}
++
++def readStringProperty = { String name, String fallback ->
++    def direct = project.hasProperty(name) ? project.property(name) : null
++    def upper = project.hasProperty(name.toUpperCase()) ? project.property(name.toUpperCase()) : null
++    def value = direct ?: upper
++    return (value != null && value.toString().trim().length() > 0) ? value.toString() : fallback
++}
++
++def readIntProperty = { String name, String fallback ->
++    return Integer.parseInt(readStringProperty(name, fallback))
++}
++
++def compileSdk = readIntProperty("compileSdk", readStringProperty("NS_DEFAULT_COMPILE_SDK_VERSION", "35"))
++def targetSdk = readIntProperty("targetSdk", Integer.toString(compileSdk))
++def minSdk = readIntProperty("minSdkVersion", "23")
++def kotlinVersion = readStringProperty("kotlinVersion", readStringProperty("ns_default_kotlin_version", "2.2.20"))
++def firebaseBomVersion = readStringProperty("firebaseBomVersion", "33.13.0")
++
++android {
++    namespace "org.nativescript.firebase.auth"
++    compileSdkVersion compileSdk
++
++    defaultConfig {
++        minSdkVersion minSdk
++        targetSdkVersion targetSdk
++    }
++
++    compileOptions {
++        sourceCompatibility JavaVersion.VERSION_17
++        targetCompatibility JavaVersion.VERSION_17
++    }
++
++    kotlinOptions {
++        jvmTarget = "17"
++    }
++
++    sourceSets {
++        main {
++            java.srcDirs += ["src/main/java"]
++            manifest.srcFile "src/main/AndroidManifest.xml"
++        }
++    }
++}
++
++dependencies {
++    implementation "org.jetbrains.kotlin:kotlin-stdlib:${kotlinVersion}"
++    implementation platform("com.google.firebase:firebase-bom:${firebaseBomVersion}")
++    implementation "com.google.firebase:firebase-auth"
++}

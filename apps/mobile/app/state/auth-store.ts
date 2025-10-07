@@ -100,12 +100,22 @@ function formatError(error: unknown): string {
   if (typeof error === 'string') {
     return error
   }
-  const err = error as { message?: string; code?: string }
-  const message = err.message ?? 'Unknown authentication error'
-  if (err.code) {
-    return `${err.code}: ${message}`
+  const err = error as { message?: string; code?: string | number }
+  const code = err.code !== undefined ? String(err.code).trim() : ''
+  const message = err.message?.trim?.() ?? ''
+  if (code === '10') {
+    return 'Google sign-in is misconfigured for this build (status 10). Register your Android SHA-1 fingerprint in Firebase and download the updated google-services.json.'
   }
-  return message
+  if (code && message) {
+    return `${code}: ${message}`
+  }
+  if (message) {
+    return message
+  }
+  if (code) {
+    return `Error ${code}`
+  }
+  return 'Unknown authentication error'
 }
 
 function isPlaceholder(value: string | undefined | null) {

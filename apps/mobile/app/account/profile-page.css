@@ -27,6 +27,7 @@
   background-color: var(--color-sheet);
   border-radius: 16;
   padding: 20;
+  box-shadow: 5 5 5 rgba(0, 0, 0, 0.05);
 }
 
 .profile-name {
@@ -51,12 +52,12 @@
   color: var(--color-ink);
 }
 
+.account-primary{
+  font-weight: 600;
+  color: var(--color-deep-blue);
+}
+
 .account-signout {
-  border-radius: 12;
-  padding: 12;
   font-weight: 600;
   color: #d14343;
-  border-width: 1;
-  border-color: rgba(209, 67, 67, 0.3);
-  background-color: rgba(209, 67, 67, 0.08);
 }

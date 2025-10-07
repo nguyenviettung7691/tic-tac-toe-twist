@@ -113,5 +113,5 @@ export function onNavAbout() {
 }
 
 export function onAvatarTap() {
-  onEditDisplayName()
+  // onEditDisplayName()
 }

@@ -12,9 +12,13 @@
     "dev:ai": "npm --workspace services/ai run dev",
     "build:ai": "npm --workspace services/ai run build",
     "mobile:android": "node scripts/ns-mobile-run.js",
-    "debug:android": "ns debug android --emulator --path apps/mobile"
+    "debug:android": "npx nativescript@latest debug android --emulator --path apps/mobile",
+    "postinstall": "patch-package"
   },
   "engines": {
     "node": ">=18"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.1"
   }
 }

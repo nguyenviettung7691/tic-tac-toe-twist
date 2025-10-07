@@ -12,7 +12,20 @@
           "package_name": "com.tictactoetwist"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "172853375930-f7lr71895af06a0q525nnlla6kmv9m56.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.tictactoetwist",
+            "certificate_hash": "f6aa6f17875e0450fbf3a59cf5d02f15a11cc938"
+          }
+        },
+        {
+          "client_id": "172853375930-rcmua5hbgk3i3b6hb264dfg4o35dc2dv.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyB7shJj1aOsEsIvk5pkGe6seYaRpnD8zV8"
@@ -20,7 +33,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "172853375930-rcmua5hbgk3i3b6hb264dfg4o35dc2dv.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

@@ -99,10 +99,9 @@ Step 1 — Install and Bootstrap
    - `ns create mobile --template @nativescript/template-blank-ts`
    - `cd mobile && npm install`
 
-3) Add UI goodies and Firebase (optional cloud sync):
+3) Add Firebase (cloud sync):
 
    - `npm i @nativescript/firebase-core @nativescript/firebase-auth @nativescript/firebase-firestore`
-   - `npm i @nativescript-community/ui-lottie`
 
 4) Link the shared engine into the app:
 
@@ -159,7 +158,7 @@ Difficulty Modes
 
 Result Screen (Mobile)
 
-- Confetti animation via `@nativescript-community/ui-lottie`.
+- Confetti animation with CSS.
 - Match facts: variant toggles, turns, accuracy (blunders), win path overlay.
 - Replay: scrub through moves, auto‑play, share gif (stretch goal).
 - CTA: Rematch with same variants; change variants; difficulty toggle.

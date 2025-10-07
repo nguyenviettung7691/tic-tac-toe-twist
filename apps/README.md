@@ -8,10 +8,9 @@ Create the app:
 2) `ns create mobile --template @nativescript/template-blank-ts`
 3) `cd mobile && npm install`
 
-Add optional plugins:
+Add plugins:
 
 - `npm i @nativescript/firebase-core @nativescript/firebase-auth @nativescript/firebase-firestore`
-- `npm i @nativescript-community/ui-lottie`
 
 Link the shared engine:
 
@@ -93,7 +92,7 @@ Authentication UI:
 
 Animations on result screen:
 
-- Use `@nativescript-community/ui-lottie` (confetti animation), and animate board overlays to show the winning line.
+- Use CSS confetti animation, and animate board overlays to show the winning line.
 
 Replay:
 
