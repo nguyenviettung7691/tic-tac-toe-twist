@@ -44,21 +44,8 @@
 }
 
 .account-social {
-  border-radius: 12;
-  padding: 12;
-  font-weight: 600;
-  color: var(--color-ink);
-  background-color: var(--color-sheet);
-  border-width: 1;
-  border-color: var(--color-outline);
   margin-top: 20;
 }
-.account-social.google {
-  border-color: #f44242;
-  color: #f44242;
-  font-size: 18;
-}
-
 
 .account-link {
   text-align: center;

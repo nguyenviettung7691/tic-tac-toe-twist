@@ -1,4 +1,6 @@
-<Page navigatingTo="onNavigatingTo" xmlns="http://schemas.nativescript.org/tns.xsd">
+<Page navigatingTo="onNavigatingTo"
+      xmlns="http://schemas.nativescript.org/tns.xsd"
+      xmlns:google="@nativescript/google-signin">
   <ActionBar class="app-bar" flat="true">
     <ActionBar.titleView>
       <GridLayout columns="auto,*" class="app-bar-grid">
@@ -35,7 +37,7 @@
   <GridLayout rows="*, auto">
     <ScrollView row="0">
       <StackLayout class="account-screen" spacing="16">
-        <Label class="account-heading" text="Welcome back!" />
+        <Label class="account-heading" text="Welcome!" />
         <Label class="account-subheading" text="By signing in you can:" textWrap="true" />
         <Label class="account-subheading" text="📝 Keep track of your matches and achievements." textWrap="true" />
         <Label class="account-subheading" text="🤵 Play against other human opponents." textWrap="true" />
@@ -44,10 +46,11 @@
                text="{{ formError || authError }}"
                visibility="{{ (formError || authError) ? 'visible' : 'collapse' }}"
                textWrap="true" />
-        <Button text="Continue with Google"
-                class="account-social google"
-                tap="onGoogleTap"
-                isEnabled="{{ !authLoading }}" />
+        <google:GoogleSignInButton tap="onGoogleTap"
+                                   class="account-social google"
+                                   isEnabled="{{ !authLoading }}"
+                                   colorScheme="auto"
+                                   colorStyle="wide" />
       </StackLayout>
     </ScrollView>
 
