@@ -493,7 +493,7 @@ export async function deleteMatch(userId: string, matchId: string): Promise<bool
   state[userId] = next
   persist()
   notify(userId)
-  await removeMatchFromFirestore(userId, matchId)
+  void removeMatchFromFirestore(userId, matchId)
   return true
 }
 

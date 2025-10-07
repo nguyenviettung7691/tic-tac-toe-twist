@@ -1,4 +1,4 @@
-<Page navigatingTo="onNavigatingTo" xmlns="http://schemas.nativescript.org/tns.xsd">
+<Page navigatingTo="onNavigatingTo" unloaded="onUnloaded" xmlns="http://schemas.nativescript.org/tns.xsd">
   <ActionBar class="app-bar" flat="true">
     <NavigationButton text="Back" android.systemIcon="ic_menu_back" tap="onBack" />
     <Label text="Match Detail" class="action-bar-title" />
@@ -26,9 +26,15 @@
         <Button class="match-detail-primary"
                 text="Watch replay"
                 tap="onWatchReplay"
-                isEnabled="{{ hasReplay }}" />
-        <Button class="match-detail-primary" text="Start match again" tap="onStartAgain" />
-        <Button class="match-detail-danger" text="Delete match" tap="onDeleteMatch" />
+                isEnabled="{{ hasReplay &amp;&amp; !isDeleting }}" />
+        <Button class="match-detail-primary"
+                text="Start match again"
+                tap="onStartAgain"
+                isEnabled="{{ !isDeleting }}" />
+        <Button class="match-detail-danger"
+                text="{{ isDeleting ? 'Deleting...' : 'Delete match' }}"
+                tap="onDeleteMatch"
+                isEnabled="{{ !isDeleting }}" />
       </StackLayout>
     </StackLayout>
   </ScrollView>

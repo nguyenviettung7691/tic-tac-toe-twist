@@ -5,11 +5,12 @@ import { getAuthState } from '~/state/auth-store'
 import { deleteMatch, getMatch, type StoredMatch } from '~/state/match-store'
 import { queueReplay, startNewGame } from '~/state/game-store'
 import { formatReplayEntry } from '~/utils/game-format'
-import { navigateToLogin } from '~/services/navigation'
+import { navigateToLogin, navigateToProfile } from '~/services/navigation'
 
 let viewModel: Observable | null = null
 let currentMatch: StoredMatch | null = null
 let currentUserId: string | null = null
+let currentPage: Page | null = null
 
 function ensureViewModel() {
   if (!viewModel) {
@@ -26,6 +27,7 @@ function ensureViewModel() {
     viewModel.set('winningLineVisible', false)
     viewModel.set('hasReplay', false)
     viewModel.set('replaySteps', [] as string[])
+    viewModel.set('isDeleting', false)
   }
   return viewModel
 }
@@ -197,6 +199,7 @@ function populate(match: StoredMatch, page: Page) {
   currentMatch = match
   const vm = ensureViewModel()
   page.bindingContext = vm
+  vm.set('isDeleting', false)
 
   const setup = match.setup
   vm.set('matchId', match.id)
@@ -229,14 +232,32 @@ function failAndExit(message: string) {
     message,
     okButtonText: 'OK',
   }).finally(() => {
-    Frame.topmost()?.goBack()
+    void goBackToMatches()
   })
+}
+
+function goBackToMatches(): boolean {
+  const frame = currentPage?.frame ?? Frame.topmost()
+  if (frame) {
+    const backStack = (frame as { backStack?: unknown[] }).backStack
+    const canGoBack =
+      typeof (frame as { canGoBack?: () => boolean }).canGoBack === 'function'
+        ? (frame as { canGoBack: () => boolean }).canGoBack()
+        : Array.isArray(backStack) && backStack.length > 0
+    if (canGoBack) {
+      frame.goBack()
+      return true
+    }
+  }
+  navigateToProfile()
+  return false
 }
 
 export function onNavigatingTo(args: NavigatedData) {
   const page = args.object as Page
   const vm = ensureViewModel()
   page.bindingContext = vm
+  currentPage = page
 
   const { user } = getAuthState()
   if (!user) {
@@ -261,7 +282,11 @@ export function onNavigatingTo(args: NavigatedData) {
 }
 
 export function onBack() {
-  Frame.topmost()?.goBack()
+  void goBackToMatches()
+}
+
+export function onUnloaded() {
+  currentPage = null
 }
 
 export function onWatchReplay() {
@@ -291,6 +316,10 @@ export async function onDeleteMatch() {
   if (!currentUserId || !currentMatch) {
     return
   }
+  const vm = ensureViewModel()
+  if (vm.get('isDeleting')) {
+    return
+  }
   const confirmed = await Dialogs.confirm({
     title: 'Delete match',
     message: 'This will remove the saved match and its replay steps. Continue?',
@@ -300,20 +329,25 @@ export async function onDeleteMatch() {
   if (!confirmed) {
     return
   }
-  const success = await deleteMatch(currentUserId, currentMatch.id)
-  if (!success) {
+  vm.set('isDeleting', true)
+  try {
+    const success = await deleteMatch(currentUserId, currentMatch.id)
+    if (!success) {
+      await Dialogs.alert({
+        title: 'Unable to delete',
+        message: 'The match could not be deleted. Please try again.',
+        okButtonText: 'OK',
+      })
+      return
+    }
     await Dialogs.alert({
-      title: 'Unable to delete',
-      message: 'The match could not be deleted. Please try again.',
+      title: 'Match deleted',
+      message: 'The match has been removed from your history.',
       okButtonText: 'OK',
     })
-    return
+    currentMatch = null
+    void goBackToMatches()
+  } finally {
+    vm.set('isDeleting', false)
   }
-  await Dialogs.alert({
-    title: 'Match deleted',
-    message: 'The match has been removed from your history.',
-    okButtonText: 'OK',
-  })
-  currentMatch = null
-  Frame.topmost()?.goBack()
 }
