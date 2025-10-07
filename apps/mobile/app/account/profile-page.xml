@@ -1,4 +1,4 @@
-<Page navigatingTo="onNavigatingTo" xmlns="http://schemas.nativescript.org/tns.xsd">
+<Page navigatingTo="onNavigatingTo" unloaded="onUnloaded" xmlns="http://schemas.nativescript.org/tns.xsd">
   <ActionBar class="app-bar" flat="true">
     <ActionBar.titleView>
       <GridLayout columns="auto,*" class="app-bar-grid">
@@ -51,7 +51,7 @@
           <Label class="profile-name" text="{{ authDisplayName }}" />
           <Label class="profile-email" text="{{ authEmail }}" visibility="{{ authEmail ? 'visible' : 'collapse' }}" />
           <StackLayout visibility="{{ authProviderLabels &amp;&amp; authProviderLabels.length ? 'visible' : 'collapse' }}">
-            <Label class="profile-section" text="Linked providers:" />
+            <Label text="Linked providers:" />
             <Repeater items="{{ authProviderLabels }}">
               <Repeater.itemTemplate>
                 <Label class="profile-provider" text="{{ '‣' + $value }}" />
@@ -70,6 +70,47 @@
                   class="account-signout"
                   tap="onSignOut"
                   isEnabled="{{ authLoggedIn &amp;&amp; !authLoading }}" />
+        </StackLayout>
+        <StackLayout class="matches-section" spacing="12">
+          <Label class="profile-section" text="My Matches" />
+          <Label class="matches-empty"
+                 text="No matches yet. Play a game to start your library."
+                 textWrap="true"
+                 visibility="{{ matchesEmpty ? 'visible' : 'collapse' }}" />
+          <Repeater items="{{ matchRows }}">
+            <Repeater.itemTemplate>
+              <GridLayout columns="*,*" class="match-row">
+                <StackLayout col="0"
+                             bindingContext="{{ left }}"
+                             class="{{ cssClass }}"
+                             visibility="{{ hidden ? 'collapse' : 'visible' }}"
+                             tap="onMatchCardTap">
+                  <Label class="match-card-outcome" text="{{ outcomeLabel }}" />
+                  <Label class="match-card-opponent" text="{{ opponentLabel }}" />
+                  <Label class="match-card-setup" text="{{ setupLabel }}" />
+                  <Label class="match-card-moves" text="{{ movesLabel }}" />
+                  <Label class="match-card-date" text="{{ dateLabel }}" />
+                  <Label class="match-card-variants"
+                         text="{{ variantsLabel }}"
+                         textWrap="true" />
+                </StackLayout>
+                <StackLayout col="1"
+                             bindingContext="{{ right }}"
+                             class="{{ cssClass }}"
+                             visibility="{{ hidden ? 'collapse' : 'visible' }}"
+                             tap="onMatchCardTap">
+                  <Label class="match-card-outcome" text="{{ outcomeLabel }}" />
+                  <Label class="match-card-opponent" text="{{ opponentLabel }}" />
+                  <Label class="match-card-setup" text="{{ setupLabel }}" />
+                  <Label class="match-card-moves" text="{{ movesLabel }}" />
+                  <Label class="match-card-date" text="{{ dateLabel }}" />
+                  <Label class="match-card-variants"
+                         text="{{ variantsLabel }}"
+                         textWrap="true" />
+                </StackLayout>
+              </GridLayout>
+            </Repeater.itemTemplate>
+          </Repeater>
         </StackLayout>
       </StackLayout>
     </ScrollView>

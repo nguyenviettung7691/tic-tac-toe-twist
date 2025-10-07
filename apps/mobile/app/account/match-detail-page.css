@@ -1,0 +1,58 @@
+.match-detail {
+  padding: 24;
+  margin: 0 16;
+}
+
+.match-detail-result {
+  font-size: 24;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.match-detail-summary {
+  font-size: 14;
+  color: rgba(31, 44, 63, 0.8);
+}
+
+.match-detail-date {
+  font-size: 12;
+  color: rgba(31, 44, 63, 0.6);
+}
+
+.match-detail-section {
+  background-color: var(--color-sheet);
+  border-radius: 16;
+  padding: 16;
+  box-shadow: 3 3 4 rgba(0, 0, 0, 0.05);
+}
+
+.match-detail-heading {
+  font-size: 13;
+  font-weight: 700;
+  color: rgba(31, 44, 63, 0.8);
+}
+
+.match-detail-text {
+  font-size: 13;
+  color: rgba(31, 44, 63, 0.75);
+}
+
+.match-detail-step {
+  font-size: 12;
+  color: rgba(31, 44, 63, 0.7);
+  margin-bottom: 4;
+}
+
+.match-detail-actions {
+  margin-top: 8;
+}
+
+.match-detail-primary {
+  font-weight: 600;
+  color: var(--color-deep-blue);
+}
+
+.match-detail-danger {
+  font-weight: 600;
+  color: #d14343;
+}

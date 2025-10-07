@@ -292,13 +292,60 @@ export async function signOut() {
   ensureAuthListener()
   setState({ loading: true, error: null })
   try {
-    await GoogleSignin.signOut().catch(() => undefined)
-    await getAuth().signOut()
+    const auth = getAuth()
+    const activeUser = auth.currentUser
+    console.log('[auth] signOut: begin', {
+      hasCurrentUser: !!activeUser,
+      uid: activeUser?.uid ?? null,
+      providerIds: activeUser?.providerData?.map((info) => info?.providerId).filter(Boolean) ?? [],
+      loading: currentState.loading,
+    })
+
+    await configureGoogleOnce().catch((error) => {
+      console.warn('[auth] signOut: google configure warning', error)
+      return undefined
+    })
+
+    const googleOutcome = await Promise.race([
+      GoogleSignin.signOut()
+        .then(() => 'success' as const)
+        .catch((error) => {
+          console.warn('[auth] signOut: google signOut warning', error)
+          return 'error' as const
+        }),
+      new Promise<'timeout'>((resolve) => {
+        setTimeout(() => resolve('timeout'), 5000)
+      }),
+    ])
+    console.log('[auth] signOut: google signOut complete', { googleOutcome })
+
+    await auth.signOut()
+    console.log('[auth] signOut: firebase signOut complete')
+
+    currentState = {
+      ...currentState,
+      user: null,
+      loading: false,
+      error: null,
+    }
+    notify()
+    console.log('[auth] signOut: state cleared and listeners notified')
   } catch (error) {
     const message = formatError(error)
+    console.error('[auth] signOut: failed', {
+      message,
+      raw: error,
+    })
     setState({ error: message })
     throw new Error(message)
   } finally {
-    setState({ loading: false })
+    const { loading } = currentState
+    if (loading) {
+      setState({ loading: false })
+    }
+    console.log('[auth] signOut: finalize', {
+      loading: currentState.loading,
+      user: currentState.user ? { uid: currentState.user.uid } : null,
+    })
   }
 }

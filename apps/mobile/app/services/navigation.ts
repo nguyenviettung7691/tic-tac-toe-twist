@@ -62,3 +62,12 @@ export function navigateToAbout(fromNav = false) {
     transition: { name: 'fade' },
   })
 }
+
+export function navigateToMatchDetail(matchId: string) {
+  navigate({
+    moduleName: 'account/match-detail-page',
+    context: { matchId },
+    animated: true,
+    transition: { name: 'slideLeft' },
+  })
+}

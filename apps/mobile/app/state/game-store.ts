@@ -10,6 +10,8 @@ import {
 } from '@ttt/engine';
 import type { Difficulty, GameState, Move, VariantConfig } from '@ttt/engine';
 import { getApiBaseUrl, requestMove } from '~/services/api';
+import { getAuthState } from '~/state/auth-store';
+import { saveCompletedMatch } from '~/state/match-store';
 
 export type { GameState, Move } from '@ttt/engine';
 
@@ -301,6 +303,15 @@ function applyMoveAndUpdate(move: Move) {
   currentGame = { ...updated, winner };
   if (winner) {
     lastFinishedGame = currentGame;
+    const { user } = getAuthState();
+    if (user) {
+      saveCompletedMatch({
+        userId: user.uid,
+        game: currentGame,
+        setup: { ...currentSetup },
+        opponentType: currentSetup.vsAi ? 'ai' : 'human',
+      });
+    }
   }
   notifyListeners();
 }

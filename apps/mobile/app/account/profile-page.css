@@ -42,9 +42,9 @@
 }
 
 .profile-section {
-  font-size: 13;
+  font-size: 16;
   font-weight: 600;
-  color: rgba(31, 44, 63, 0.7);
+  margin: 10 0;
 }
 
 .profile-provider {
@@ -60,4 +60,69 @@
 .account-signout {
   font-weight: 600;
   color: #d14343;
+}
+
+.matches-section {
+  background-color: transparent;
+}
+
+.matches-empty {
+  font-size: 14;
+  color: rgba(31, 44, 63, 0.6);
+}
+
+.match-row {
+  margin-bottom: 12;
+}
+
+.match-card {
+  background-color: var(--color-sheet);
+  border-radius: 14;
+  padding: 16;
+  margin: 0 6 12 6;
+  box-shadow: 3 3 4 rgba(0, 0, 0, 0.05);
+}
+
+.match-card--win .match-card-outcome {
+  color: #1fa971;
+}
+
+.match-card--loss .match-card-outcome {
+  color: #d14343;
+}
+
+.match-card--draw .match-card-outcome {
+  color: rgba(31, 44, 63, 0.7);
+}
+
+.match-card--hidden {
+  height: 0;
+  margin: 0;
+  padding: 0;
+  opacity: 0;
+}
+
+.match-card-outcome {
+  font-size: 14;
+  font-weight: 700;
+  margin-bottom: 4;
+}
+
+.match-card-opponent {
+  font-size: 13;
+  font-weight: 600;
+  color: rgba(31, 44, 63, 0.85);
+}
+
+.match-card-setup,
+.match-card-moves,
+.match-card-date,
+.match-card-variants {
+  font-size: 12;
+  color: rgba(31, 44, 63, 0.7);
+  margin-top: 2;
+}
+
+.match-card-variants {
+  margin-top: 6;
 }
