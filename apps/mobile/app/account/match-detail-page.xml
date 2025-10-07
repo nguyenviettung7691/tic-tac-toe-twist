@@ -11,7 +11,6 @@
       <Label class="match-detail-date" text="{{ dateLabel }}" textWrap="true" />
 
       <StackLayout class="match-detail-section" spacing="8">
-        <Label class="match-detail-heading" text="Overview" />
         <Label class="match-detail-text" text="{{ opponentLabel }}" textWrap="true" />
         <Label class="match-detail-text" text="{{ setupLabel }}" textWrap="true" />
         <Label class="match-detail-text" text="{{ variantsLabel }}" textWrap="true" />
@@ -21,17 +20,6 @@
                text="{{ winningLineLabel }}"
                textWrap="true"
                visibility="{{ winningLineVisible ? 'visible' : 'collapse' }}" />
-      </StackLayout>
-
-      <StackLayout class="match-detail-section"
-                   spacing="6"
-                   visibility="{{ hasReplay ? 'visible' : 'collapse' }}">
-        <Label class="match-detail-heading" text="Replay Steps" />
-        <Repeater items="{{ replaySteps }}">
-          <Repeater.itemTemplate>
-            <Label class="match-detail-step" text="{{ $value }}" textWrap="true" />
-          </Repeater.itemTemplate>
-        </Repeater>
       </StackLayout>
 
       <StackLayout class="match-detail-actions" spacing="12">

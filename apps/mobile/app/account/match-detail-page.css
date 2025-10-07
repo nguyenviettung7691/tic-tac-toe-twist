@@ -23,6 +23,7 @@
   background-color: var(--color-sheet);
   border-radius: 16;
   padding: 16;
+  margin-top: 10;
   box-shadow: 3 3 4 rgba(0, 0, 0, 0.05);
 }
 

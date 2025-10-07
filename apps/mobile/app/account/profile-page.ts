@@ -277,6 +277,15 @@ export async function onEditDisplayName() {
 
 export async function onSignOut() {
   try {
+    const confirmed = await Dialogs.confirm({
+      title: 'Sign out',
+      message: 'Are you sure you want to sign out of Tic-Tac-Toe Twist?',
+      okButtonText: 'Sign out',
+      cancelButtonText: 'Cancel',
+    })
+    if (!confirmed) {
+      return
+    }
     const stateBefore = getAuthState()
     console.log('[profile] Sign out requested', {
       user: stateBefore.user ? { uid: stateBefore.user.uid, providers: stateBefore.user.providerIds } : null,
