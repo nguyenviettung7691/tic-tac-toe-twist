@@ -134,3 +134,65 @@
 .match-card-variants {
   margin-top: 6;
 }
+
+.achievements-section {
+  background-color: transparent;
+}
+
+.achievement-row {
+  background-color: var(--color-sheet);
+  border-radius: 14;
+  padding: 16;
+  margin: 0 6 12 6;
+  box-shadow: 3 3 4 rgba(0, 0, 0, 0.05);
+}
+
+.achievement-row--locked {
+  background-color: rgba(240, 242, 246, 0.9);
+}
+
+.achievement-row--locked .achievement-title,
+.achievement-row--locked .achievement-description,
+.achievement-row--locked .achievement-meta,
+.achievement-row--locked .achievement-earned {
+  color: rgba(31, 44, 63, 0.55);
+}
+
+.achievement-row--locked .achievement-icon {
+  color: rgba(31, 44, 63, 0.45);
+}
+
+.achievement-row--earned .achievement-icon {
+  color: #1fa971;
+}
+
+.achievement-icon {
+  font-size: 32;
+  margin-right: 12;
+}
+
+.achievement-detail {
+  justify-content: center;
+}
+
+.achievement-title {
+  font-size: 15;
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.achievement-description {
+  font-size: 13;
+  color: rgba(31, 44, 63, 0.75);
+}
+
+.achievement-meta {
+  font-size: 12;
+  color: rgba(31, 44, 63, 0.7);
+}
+
+.achievement-earned {
+  font-size: 12;
+  font-weight: 600;
+  color: #1fa971;
+}

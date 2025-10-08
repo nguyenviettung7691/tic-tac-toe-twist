@@ -13,6 +13,7 @@ import {
   subscribeToMatches,
   type StoredMatch,
 } from '~/state/match-store'
+import { subscribeToAchievements, type AchievementProgress } from '~/state/achievement-store'
 import {
   navigateToAbout,
   navigateToLogin,
@@ -24,6 +25,7 @@ import {
 let viewModel: Observable | null = null
 let detachAuth: (() => void) | null = null
 let detachMatches: (() => void) | null = null
+let detachAchievements: (() => void) | null = null
 let matchesUserId: string | null = null
 let authWatcherAttached = false
 let authChangeHandler: ((args: any) => void) | null = null
@@ -46,6 +48,18 @@ interface MatchRowVM {
   right: MatchCardVM
 }
 
+interface AchievementVM {
+  id: string
+  icon: string
+  title: string
+  description: string
+  difficultyLabel: string
+  progressLabel: string
+  earnedDateLabel: string
+  cssClass: string
+  earned: boolean
+}
+
 function ensureViewModel() {
   if (!viewModel) {
     viewModel = new Observable()
@@ -55,6 +69,7 @@ function ensureViewModel() {
     viewModel.set('matchesCount', 0)
     viewModel.set('matchRows', [] as MatchRowVM[])
     viewModel.set('matchSyncError', '')
+    viewModel.set('achievements', [] as AchievementVM[])
   }
   if (!detachAuth) {
     detachAuth = bindAuthTo(viewModel)
@@ -86,6 +101,11 @@ function clearMatches() {
   vm.set('matchRows', [] as MatchRowVM[])
   vm.set('matchesEmpty', true)
   vm.set('matchesCount', 0)
+}
+
+function clearAchievements() {
+  const vm = ensureViewModel()
+  vm.set('achievements', [] as AchievementVM[])
 }
 
 function formatDateLabel(iso: string): string {
@@ -200,6 +220,40 @@ function buildMatchRows(cards: MatchCardVM[]): MatchRowVM[] {
   return rows
 }
 
+function formatAchievementProgress(entry: AchievementProgress): string {
+  const progressValue = `${entry.progress}/${entry.target}`
+  return entry.earned ? 'Completed' : `Progress - ${progressValue}`
+}
+
+function formatAchievementEarnedDate(iso: string | null): string {
+  if (!iso) {
+    return ''
+  }
+  return `Earned ${formatDateLabel(iso)}`
+}
+
+function buildAchievementRow(entry: AchievementProgress): AchievementVM {
+  const earned = !!entry.earned
+  const cssClass = `achievement-row ${earned ? 'achievement-row--earned' : 'achievement-row--locked'}`
+  return {
+    id: entry.id,
+    icon: entry.icon,
+    title: entry.title,
+    description: entry.description,
+    difficultyLabel: `Difficulty: ${entry.difficulty}`,
+    progressLabel: formatAchievementProgress(entry),
+    earnedDateLabel: earned ? formatAchievementEarnedDate(entry.earnedAtIso) : '',
+    cssClass,
+    earned,
+  }
+}
+
+function updateAchievementBindings(achievements: AchievementProgress[]) {
+  const vm = ensureViewModel()
+  const rows = achievements.map(buildAchievementRow)
+  vm.set('achievements', rows)
+}
+
 function updateMatchSyncError(message: string | null) {
   const vm = ensureViewModel()
   const text = (message ?? '').trim()
@@ -231,9 +285,12 @@ function attachMatches(userId: string) {
   if (!userId) {
     console.warn('[profile] attachMatches called without userId')
     clearMatches()
+    clearAchievements()
     updateMatchSyncError(null)
     detachMatches?.()
     detachMatches = null
+    detachAchievements?.()
+    detachAchievements = null
     matchesUserId = null
     return
   }
@@ -241,7 +298,11 @@ function attachMatches(userId: string) {
     return
   }
   detachMatches?.()
+  detachMatches = null
+  detachAchievements?.()
+  detachAchievements = null
   clearMatches()
+  clearAchievements()
   updateMatchSyncError(null)
   matchesUserId = userId
   console.log('[profile] Subscribing to matches', { userId })
@@ -251,6 +312,7 @@ function attachMatches(userId: string) {
     detachErrors?.()
     detachData?.()
   }
+  detachAchievements = subscribeToAchievements(userId, updateAchievementBindings)
 }
 
 export function onNavigatingTo(args: NavigatedData) {
@@ -322,8 +384,11 @@ export async function onSignOut() {
     console.log('[profile] Sign out complete, navigating to login')
     detachMatches?.()
     detachMatches = null
+    detachAchievements?.()
+    detachAchievements = null
     matchesUserId = null
     clearMatches()
+    clearAchievements()
     updateMatchSyncError(null)
     navigateToLogin()
   } catch (error) {
@@ -377,6 +442,8 @@ export function onAvatarTap() {
 export function onUnloaded() {
   detachMatches?.()
   detachMatches = null
+  detachAchievements?.()
+  detachAchievements = null
   matchesUserId = null
   if (authWatcherAttached && viewModel && authChangeHandler) {
     viewModel.off(Observable.propertyChangeEvent, authChangeHandler)

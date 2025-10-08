@@ -116,6 +116,25 @@
             </Repeater.itemTemplate>
           </Repeater>
         </StackLayout>
+        <StackLayout class="achievements-section" spacing="12">
+          <Label class="profile-section" text="My Achievements" />
+          <Repeater items="{{ achievements }}">
+            <Repeater.itemTemplate>
+              <GridLayout columns="auto,*" class="{{ cssClass }}">
+                <Label col="0" class="achievement-icon" text="{{ icon }}" verticalAlignment="top" />
+                <StackLayout col="1" class="achievement-detail" spacing="4">
+                  <Label class="achievement-title" text="{{ title }}" />
+                  <Label class="achievement-description" text="{{ description }}" textWrap="true" />
+                  <Label class="achievement-meta" text="{{ difficultyLabel }}" />
+                  <Label class="achievement-meta" text="{{ progressLabel }}" />
+                  <Label class="achievement-earned"
+                         text="{{ earnedDateLabel }}"
+                         visibility="{{ earnedDateLabel ? 'visible' : 'collapse' }}" />
+                </StackLayout>
+              </GridLayout>
+            </Repeater.itemTemplate>
+          </Repeater>
+        </StackLayout>
       </StackLayout>
     </ScrollView>
 

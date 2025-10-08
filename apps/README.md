@@ -90,6 +90,12 @@ Authentication UI:
 - Avatar state in the ActionBar is driven from Firebase auth; once a user signs in you will see their photo (or initials) on every page.
 - Google sign-in uses the native SDK; ensure the OAuth client ID above is configured or the button will surface a configuration error message.
 
+Achievements:
+
+- The profile screen now lists every built-in achievement with live progress (first win, streaks, variant specialists, etc.).
+- Progress bumps and unlocks trigger in-app toasts/alerts immediately after a match is saved.
+- Progress data syncs to Firestore so achievements follow the player across devices.
+
 Animations on result screen:
 
 - Use CSS confetti animation, and animate board overlays to show the winning line.

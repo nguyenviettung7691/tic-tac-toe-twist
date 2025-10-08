@@ -14,6 +14,7 @@ import type { Difficulty, PowerUsage } from '@ttt/engine'
 
 import { initFirebase } from '~/services/firebase'
 import { findWinningLine } from '~/utils/game-format'
+import { updateAchievementsFromMatches } from './achievement-store'
 
 const STORAGE_KEY = 'ttt.match.history.v1'
 const MAX_MATCHES_PER_USER = 50
@@ -424,6 +425,7 @@ function applyRemoteMatches(userId: string, matches: StoredMatch[]) {
   const state = ensureCache()
   state[userId] = limited
   persist()
+  updateAchievementsFromMatches(userId, limited, { source: 'sync' })
   notify(userId)
 }
 
@@ -621,6 +623,7 @@ export function saveCompletedMatch({ userId, game, setup, opponentType }: Comple
   }
   state[userId] = next
   persist()
+  updateAchievementsFromMatches(userId, next, { source: 'update' })
   notify(userId)
 
   void pushMatchToFirestore(userId, match)
@@ -657,6 +660,7 @@ export async function deleteMatch(userId: string, matchId: string): Promise<bool
   }
   state[userId] = next
   persist()
+  updateAchievementsFromMatches(userId, next, { source: 'update' })
   notify(userId)
   void removeMatchFromFirestore(userId, matchId)
   return true
