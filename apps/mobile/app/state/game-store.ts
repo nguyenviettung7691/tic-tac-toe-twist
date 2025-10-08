@@ -9,7 +9,7 @@ import {
   legalMoves,
 } from '@ttt/engine';
 import type { Difficulty, GameState, Move, PowerUsage, VariantConfig } from '@ttt/engine';
-import { getApiBaseUrl, requestMove } from '~/services/api';
+import { getApiBaseUrl, requestMove, warmupAiService } from '~/services/api';
 import { getAuthState } from '~/state/auth-store';
 import { saveCompletedMatch } from '~/state/match-store';
 
@@ -151,6 +151,11 @@ export function startNewGame(setup: GameSetup): GameState {
   pendingReplay = null;
   activeReplay = null;
   const normalized = normalizeSetup(setup);
+  if (normalized.vsAi) {
+    void warmupAiService().catch((err) => {
+      console.warn('[ai] Warmup failed during game init', describeError(err));
+    });
+  }
   currentSetup = { ...normalized };
   busy = false;
   currentGame = withWinner(createGame(toVariantConfig(normalized)));

@@ -1,11 +1,12 @@
 import { ApplicationSettings } from '@nativescript/core'
 import '@nativescript/firebase-firestore'
 import { firebase } from '@nativescript/firebase-core'
-import type {
-  CollectionReference,
-  DocumentData,
-  Firestore,
-  QueryDocumentSnapshot,
+import {
+  FieldValue,
+  type CollectionReference,
+  type DocumentData,
+  type Firestore,
+  type QueryDocumentSnapshot,
 } from '@nativescript/firebase-firestore'
 import type { GameState, Move, Player } from '@ttt/engine'
 import type { GameSetup } from './game-store'
@@ -51,6 +52,13 @@ type MatchListener = (matches: StoredMatch[]) => void
 
 const listeners = new Map<string, Set<MatchListener>>()
 const remoteSubscriptions = new Map<string, () => void>()
+const remoteSyncDisabled = new Set<string>()
+const ensuredUserDocs = new Set<string>()
+
+type MatchErrorListener = (message: string | null) => void
+
+const errorListeners = new Map<string, Set<MatchErrorListener>>()
+const syncErrorState = new Map<string, string | null>()
 let cache: MatchesState | null = null
 let firestoreInstance: Firestore | null = null
 
@@ -113,11 +121,18 @@ async function getMatchCollection(userId: string): Promise<CollectionReference<D
   if (!userId) {
     return null
   }
+  if (remoteSyncDisabled.has(userId)) {
+    return null
+  }
   const db = await getFirestore()
   if (!db) {
     return null
   }
   try {
+    const ensured = await ensureUserRootDocument(db, userId)
+    if (!ensured) {
+      return null
+    }
     return db.collection(`users/${userId}/matches`)
   } catch (error) {
     console.error('[matches] Unable to access Firestore collection', error)
@@ -336,25 +351,68 @@ function deserializeMatch(doc: QueryDocumentSnapshot<DocumentData>): StoredMatch
 
 async function pushMatchToFirestore(userId: string, match: StoredMatch) {
   try {
+    if (remoteSyncDisabled.has(userId)) {
+      return
+    }
     const collection = await getMatchCollection(userId)
     if (!collection) {
       return
     }
-    await collection.doc(match.id).set(serializeMatch(match))
+    await collection.doc(match.id).set({
+      ...serializeMatch(match),
+      userId,
+    })
+    setSyncError(userId, null)
   } catch (error) {
-    console.error('[matches] Unable to persist match to Firestore', error)
+    if (isPermissionDenied(error)) {
+      const detail = formatFirestoreError(error)
+      const message = `Cloud sync is disabled because we don't have permission to save matches. ${detail}`
+      console.warn('[matches] Firestore denied write access; disabling cloud sync', {
+        userId,
+        code: (error as { code?: string | number })?.code ?? null,
+        detail,
+      })
+      disableRemoteSync(userId, message)
+      return
+    }
+    const detail = formatFirestoreError(error)
+    console.error('[matches] Unable to persist match to Firestore', {
+      detail,
+      error,
+    })
+    setSyncError(userId, `We couldn't sync your latest match to the cloud. ${detail}`)
   }
 }
 
 async function removeMatchFromFirestore(userId: string, matchId: string) {
   try {
+    if (remoteSyncDisabled.has(userId)) {
+      return
+    }
     const collection = await getMatchCollection(userId)
     if (!collection) {
       return
     }
     await collection.doc(matchId).delete()
+    setSyncError(userId, null)
   } catch (error) {
-    console.error('[matches] Unable to delete match from Firestore', error)
+    if (isPermissionDenied(error)) {
+      const detail = formatFirestoreError(error)
+      const message = `Cloud sync is disabled because we don't have permission to remove matches. ${detail}`
+      console.warn('[matches] Firestore denied delete access; disabling cloud sync', {
+        userId,
+        code: (error as { code?: string | number })?.code ?? null,
+        detail,
+      })
+      disableRemoteSync(userId, message)
+      return
+    }
+    const detail = formatFirestoreError(error)
+    console.error('[matches] Unable to delete match from Firestore', {
+      detail,
+      error,
+    })
+    setSyncError(userId, `We couldn't remove that match from the cloud. ${detail}`)
   }
 }
 
@@ -371,6 +429,9 @@ function applyRemoteMatches(userId: string, matches: StoredMatch[]) {
 
 async function ensureRemoteSubscription(userId: string) {
   if (remoteSubscriptions.has(userId)) {
+    return
+  }
+  if (remoteSyncDisabled.has(userId)) {
     return
   }
   const collection = await getMatchCollection(userId)
@@ -391,12 +452,116 @@ async function ensureRemoteSubscription(userId: string) {
       const remoteIds = new Set(remoteMatches.map((item) => item.id))
       await syncUnsyncedMatches(userId, remoteIds)
     }, (error) => {
-      console.error('[matches] Firestore subscription error', error)
+      if (isPermissionDenied(error)) {
+        const detail = formatFirestoreError(error)
+        const message = `Cloud sync is disabled because we don't have permission to read your matches. ${detail}`
+        console.warn('[matches] Firestore denied access for user; disabling cloud sync', {
+          userId,
+          code: (error as { code?: string | number })?.code ?? null,
+          detail,
+        })
+        disableRemoteSync(userId, message)
+        return
+      }
+      const detail = formatFirestoreError(error)
+      console.error('[matches] Firestore subscription error', {
+        detail,
+        error,
+      })
+      setSyncError(userId, `We’re having trouble keeping matches in sync. ${detail}`)
     })
   remoteSubscriptions.set(userId, unsubscribe)
 }
 
+function isPermissionDenied(error: unknown): boolean {
+  if (!error || typeof error !== 'object') {
+    return false
+  }
+  const { code, message } = error as { code?: unknown; message?: unknown }
+  const codeText = typeof code === 'string' ? code : typeof code === 'number' ? String(code) : ''
+  if (codeText.toLowerCase().includes('permission-denied')) {
+    return true
+  }
+  const messageText = typeof message === 'string' ? message : ''
+  return messageText.toUpperCase().includes('PERMISSION_DENIED')
+}
+
+function disableRemoteSync(userId: string, reason?: string) {
+  if (!userId) {
+    return
+  }
+  if (remoteSyncDisabled.has(userId)) {
+    if (reason) {
+      setSyncError(userId, reason)
+    }
+    return
+  }
+  remoteSyncDisabled.add(userId)
+  setSyncError(userId, reason ?? 'Cloud sync has been disabled for this account.')
+  cleanupRemoteSubscription(userId)
+}
+
+async function ensureUserRootDocument(db: Firestore, userId: string): Promise<boolean> {
+  if (!userId) {
+    return false
+  }
+  if (remoteSyncDisabled.has(userId)) {
+    return false
+  }
+  if (ensuredUserDocs.has(userId)) {
+    return true
+  }
+  try {
+    const docRef = db.collection('users').doc(userId)
+    const snapshot = await docRef.get()
+    if (!snapshot.exists) {
+      await docRef.set({
+        ownerUid: userId,
+        userId,
+        createdAt: FieldValue.serverTimestamp(),
+        updatedAt: FieldValue.serverTimestamp(),
+      })
+    } else {
+      const existing = snapshot.data() ?? {}
+      const payload: Record<string, unknown> = {
+        ownerUid: userId,
+        userId,
+        updatedAt: FieldValue.serverTimestamp(),
+      }
+      if (!existing || typeof existing !== 'object' || !existing.createdAt) {
+        payload.createdAt = FieldValue.serverTimestamp()
+      }
+      await docRef.update(payload)
+    }
+    ensuredUserDocs.add(userId)
+    setSyncError(userId, null)
+    return true
+  } catch (error) {
+    if (isPermissionDenied(error)) {
+      const detail = formatFirestoreError(error)
+      const message = `Cloud sync is disabled because we can't prepare your account in Firestore. ${detail}`
+      console.warn('[matches] Firestore denied access when ensuring user document', {
+        userId,
+        code: (error as { code?: string | number })?.code ?? null,
+        detail,
+      })
+      disableRemoteSync(userId, message)
+      return false
+    }
+    const detail = formatFirestoreError(error)
+    console.error('[matches] Failed to ensure user document', {
+      detail,
+      error,
+    })
+    setSyncError(userId, `We couldn't prepare cloud sync for your account. ${detail}`)
+    return false
+  }
+}
+
 async function syncUnsyncedMatches(userId: string, remoteIds: Set<string>) {
+  if (remoteSyncDisabled.has(userId)) {
+    return
+  }
   const state = ensureCache()
   const local = state[userId] ?? []
   const unsynced = local.filter((match) => !remoteIds.has(match.id))
@@ -520,6 +685,35 @@ export function subscribeToMatches(userId: string, listener: MatchListener): () 
   }
 }
 
+export function subscribeToMatchErrors(userId: string, listener: MatchErrorListener): () => void {
+  if (!userId) {
+    try {
+      listener('Cloud sync is unavailable until you sign in.')
+    } catch (error) {
+      console.error('[matches] Sync error listener failed during immediate notification', error)
+    }
+    return () => undefined
+  }
+  const set = errorListeners.get(userId) ?? new Set<MatchErrorListener>()
+  set.add(listener)
+  errorListeners.set(userId, set)
+  try {
+    listener(syncErrorState.get(userId) ?? null)
+  } catch (error) {
+    console.error('[matches] Sync error listener failed during immediate notification', error)
+  }
+  return () => {
+    const existing = errorListeners.get(userId)
+    if (!existing) {
+      return
+    }
+    existing.delete(listener)
+    if (existing.size === 0) {
+      errorListeners.delete(userId)
+    }
+  }
+}
+
 function notify(userId: string) {
   const current = listeners.get(userId)
   if (!current || current.size === 0) {
@@ -533,4 +727,73 @@ function notify(userId: string) {
       console.error('[matches] Listener failed', error)
     }
   })
+}
+
+function notifySyncErrorListeners(userId: string, message: string | null) {
+  const set = errorListeners.get(userId)
+  if (!set || set.size === 0) {
+    return
+  }
+  set.forEach((listener) => {
+    try {
+      listener(message)
+    } catch (error) {
+      console.error('[matches] Sync error listener failed', error)
+    }
+  })
+}
+
+function setSyncError(userId: string, message: string | null) {
+  if (!userId) {
+    return
+  }
+  const normalized = message ?? null
+  const previous = syncErrorState.get(userId) ?? null
+  if (previous === normalized) {
+    return
+  }
+  if (normalized === null) {
+    syncErrorState.delete(userId)
+  } else {
+    syncErrorState.set(userId, normalized)
+  }
+  notifySyncErrorListeners(userId, normalized)
+}
+
+function formatFirestoreError(error: unknown): string {
+  if (!error) {
+    return 'Unknown Firestore error.'
+  }
+  if (typeof error === 'string') {
+    return error
+  }
+  if (error instanceof Error && typeof error.message === 'string' && error.message.trim()) {
+    const message = error.message.trim()
+    const code = (error as { code?: string | number }).code
+    if (code !== undefined && code !== null) {
+      const codeText = typeof code === 'string' ? code : String(code)
+      if (codeText && !message.toLowerCase().includes(codeText.toLowerCase())) {
+        return `${message} (code ${codeText})`
+      }
+    }
+    return message
+  }
+  const { message, code } = error as { message?: unknown; code?: unknown }
+  if (typeof message === 'string' && message.trim()) {
+    if (code !== undefined && code !== null) {
+      const codeText = typeof code === 'string' ? code : String(code)
+      if (codeText) {
+        return `${message.trim()} (code ${codeText})`
+      }
+    }
+    return message.trim()
+  }
+  if (code !== undefined && code !== null) {
+    return `Error code ${String(code)}`
+  }
+  try {
+    return JSON.stringify(error)
+  } catch {
+    return 'Unknown Firestore error.'
+  }
 }

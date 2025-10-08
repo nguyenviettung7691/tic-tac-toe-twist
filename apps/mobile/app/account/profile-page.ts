@@ -8,7 +8,11 @@ import {
   signOut,
   updateDisplayName,
 } from '~/state/auth-store'
-import { subscribeToMatches, type StoredMatch } from '~/state/match-store'
+import {
+  subscribeToMatchErrors,
+  subscribeToMatches,
+  type StoredMatch,
+} from '~/state/match-store'
 import {
   navigateToAbout,
   navigateToLogin,
@@ -50,6 +54,7 @@ function ensureViewModel() {
     viewModel.set('matchesEmpty', true)
     viewModel.set('matchesCount', 0)
     viewModel.set('matchRows', [] as MatchRowVM[])
+    viewModel.set('matchSyncError', '')
   }
   if (!detachAuth) {
     detachAuth = bindAuthTo(viewModel)
@@ -195,6 +200,21 @@ function buildMatchRows(cards: MatchCardVM[]): MatchRowVM[] {
   return rows
 }
 
+function updateMatchSyncError(message: string | null) {
+  const vm = ensureViewModel()
+  const text = (message ?? '').trim()
+  const current = (vm.get('matchSyncError') as string | undefined) ?? ''
+  if (current === text) {
+    return
+  }
+  vm.set('matchSyncError', text)
+  if (text) {
+    console.warn('[profile] Match sync error', { message: text })
+  } else if (current) {
+    console.log('[profile] Match sync recovered')
+  }
+}
+
 function updateMatchBindings(matches: StoredMatch[]) {
   const vm = ensureViewModel()
   const cards = matches.map(buildMatchCard)
@@ -211,6 +231,7 @@ function attachMatches(userId: string) {
   if (!userId) {
     console.warn('[profile] attachMatches called without userId')
     clearMatches()
+    updateMatchSyncError(null)
     detachMatches?.()
     detachMatches = null
     matchesUserId = null
@@ -221,9 +242,15 @@ function attachMatches(userId: string) {
   }
   detachMatches?.()
   clearMatches()
+  updateMatchSyncError(null)
   matchesUserId = userId
   console.log('[profile] Subscribing to matches', { userId })
-  detachMatches = subscribeToMatches(userId, updateMatchBindings)
+  const detachData = subscribeToMatches(userId, updateMatchBindings)
+  const detachErrors = subscribeToMatchErrors(userId, updateMatchSyncError)
+  detachMatches = () => {
+    detachErrors?.()
+    detachData?.()
+  }
 }
 
 export function onNavigatingTo(args: NavigatedData) {
@@ -297,6 +324,7 @@ export async function onSignOut() {
     detachMatches = null
     matchesUserId = null
     clearMatches()
+    updateMatchSyncError(null)
     navigateToLogin()
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unable to sign out.'

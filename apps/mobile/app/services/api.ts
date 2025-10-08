@@ -19,10 +19,14 @@ export interface MoveRequestBody {
 const DEFAULT_PORT = resolvePort();
 const DEFAULT_BASE_URL = resolveDefaultBaseUrl();
 const ENV_CONFIGURED_BASE_URL = readEnvBaseUrl();
+const MOVE_TIMEOUT_MS = 7000;
+const FIRST_MOVE_TIMEOUT_MS = 15000;
 
 let configuredBaseUrl = ENV_CONFIGURED_BASE_URL ?? DEFAULT_BASE_URL;
 let resolvedBaseUrl: string | null = null;
 let resolvingBaseUrlPromise: Promise<string> | null = null;
+let warmupPromise: Promise<void> | null = null;
+let hasIssuedMoveRequest = false;
 
 export function getApiBaseUrl() {
   return resolvedBaseUrl ?? configuredBaseUrl;
@@ -32,15 +36,22 @@ export function setApiBaseUrl(url: string) {
   configuredBaseUrl = normalizeBaseUrl(url);
   resolvedBaseUrl = null;
   resolvingBaseUrlPromise = null;
+  hasIssuedMoveRequest = false;
 }
 
 export async function requestMove(body: MoveRequestBody): Promise<MoveResponse> {
   const baseUrl = await ensureBaseUrl();
-  const response = await fetch(`${baseUrl}/move`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  });
+  const timeoutMs = hasIssuedMoveRequest ? MOVE_TIMEOUT_MS : FIRST_MOVE_TIMEOUT_MS;
+  hasIssuedMoveRequest = true;
+  const response = await fetchWithTimeout(
+    `${baseUrl}/move`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    timeoutMs,
+  );
 
   if (!response.ok) {
     const text = await response.text();
@@ -48,6 +59,24 @@ export async function requestMove(body: MoveRequestBody): Promise<MoveResponse> 
   }
 
   return (await response.json()) as MoveResponse;
+}
+
+export function warmupAiService(): Promise<void> {
+  if (resolvedBaseUrl) {
+    return Promise.resolve();
+  }
+  if (!warmupPromise) {
+    warmupPromise = ensureBaseUrl()
+      .then(() => undefined)
+      .catch((err) => {
+        console.warn('[ai] Warmup failed', describeProbeError(err));
+        throw err;
+      })
+      .finally(() => {
+        warmupPromise = null;
+      });
+  }
+  return warmupPromise;
 }
 
 function resolvePort(): number {

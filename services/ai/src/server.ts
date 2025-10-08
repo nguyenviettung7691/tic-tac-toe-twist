@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
+import { createGame, type VariantConfig } from '@ttt/engine';
 import { chooseMove, MoveInput, MoveOutput } from './flows/move.js';
 import { startGenkitDevUi, stopGenkitDevUi } from './genkit.js';
 
@@ -24,6 +25,47 @@ app.post('/move', async (req, res) => {
 
 let httpServer: Server | null = null;
 let shuttingDown = false;
+let warmupPromise: Promise<void> | null = null;
+
+const WARMUP_CONFIG: VariantConfig = {
+  boardSize: 3,
+  winLength: 3,
+  gravity: false,
+  wrap: false,
+  misere: false,
+  randomBlocks: 0,
+  doubleMove: false,
+  laneShift: false,
+  bomb: false,
+  chaosMode: false,
+};
+
+async function warmupAiEngine(): Promise<void> {
+  if (warmupPromise) {
+    return warmupPromise;
+  }
+
+  const task = (async () => {
+    try {
+      const warmupState = createGame({ ...WARMUP_CONFIG });
+      const payload = MoveInput.parse({
+        state: warmupState,
+        config: { ...WARMUP_CONFIG },
+        difficulty: 'balanced' as const,
+      });
+      await chooseMove(payload);
+      console.info('[server] Warmup request completed');
+    } catch (err) {
+      console.warn('[server] Warmup request failed', err);
+    }
+  })();
+
+  warmupPromise = task.finally(() => {
+    warmupPromise = null;
+  });
+
+  await warmupPromise;
+}
 
 async function startServer() {
   const requestedPort = Number(process.env.PORT || 9191);
@@ -50,6 +92,8 @@ async function startServer() {
       console.log(`[server] Android emulator base URL: http://10.0.2.2:${address.port}`);
       console.log(`[server] iOS simulator base URL: http://127.0.0.1:${address.port}`);
     }
+
+    void warmupAiEngine();
   });
 
   httpServer.on('error', (err: NodeJS.ErrnoException) => {

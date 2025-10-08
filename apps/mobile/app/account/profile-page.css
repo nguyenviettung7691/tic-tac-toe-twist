@@ -71,6 +71,14 @@
   color: rgba(31, 44, 63, 0.6);
 }
 
+.matches-error {
+  font-size: 13;
+  color: #d14343;
+  background-color: rgba(209, 67, 67, 0.12);
+  border-radius: 10;
+  padding: 12;
+}
+
 .match-row {
   margin-bottom: 12;
 }

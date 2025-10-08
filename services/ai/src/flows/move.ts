@@ -34,6 +34,7 @@ const DEFAULT_MODEL_ORDER = [
 ];
 const MODEL_CANDIDATES = parseModelCandidates(process.env.GOOGLE_GENAI_MODEL);
 const TRANSIENT_RETRY_DELAY_MS = 30_000;
+const LLM_SUGGESTION_TIMEOUT_MS = Number(process.env.LLM_SUGGESTION_TIMEOUT_MS ?? '10000');
 
 let activeModelIndex = 0;
 let cachedClient: GoogleGenerativeAI | null | undefined;
@@ -377,6 +378,15 @@ function pickChill(
       return legalLlm;
     }
   }
+  const earlyGame = state.moves.length <= 1;
+  if (legalEngine) {
+    if (!includesMove(pool, legalEngine)) {
+      return legalEngine;
+    }
+    if (earlyGame || Math.random() < 0.65) {
+      return legalEngine;
+    }
+  }
   const alternates = legalEngine ? pool.filter((m) => !movesEqual(m, legalEngine)) : pool;
   if (alternates.length) {
     return randomChoice(alternates);
@@ -413,6 +423,9 @@ async function getLlmSuggestion(
   placements: PlacementMove[],
   difficulty: Difficulty
 ): Promise<LlmSuggestion> {
+  if (difficulty === 'chill') {
+    return { move: null };
+  }
   const legalText = placements.map((m) => `(${m.r},${m.c})`).join(', ');
   const prompt = buildPrompt(state, legalText, difficulty);
   console.debug('[ai] Gemini prompt\n', prompt);
@@ -431,7 +444,11 @@ async function getLlmSuggestion(
     });
 
     try {
-      const result = await model.generateContent(prompt);
+      const result = await withTimeout(
+        model.generateContent(prompt),
+        LLM_SUGGESTION_TIMEOUT_MS,
+        'LLM suggestion',
+      );
       const text = result.response?.text();
       if (!text) {
         console.warn('[ai] LLM returned empty response');
@@ -675,4 +692,25 @@ function renderBoard(state: GameState): string {
   return state.board
     .map((row) => row.map((cell) => (cell === null ? '.' : cell)).join(' '))
     .join('\n');
+}
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => {
+      const error = new Error(`${label} timed out after ${ms}ms`);
+      (error as Error & { code?: string | number }).code = 'timeout';
+      reject(error);
+    }, ms);
+
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (err) => {
+        clearTimeout(timer);
+        reject(err);
+      },
+    );
+  });
 }

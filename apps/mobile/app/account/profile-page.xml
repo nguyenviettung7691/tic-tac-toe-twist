@@ -73,6 +73,10 @@
         </StackLayout>
         <StackLayout class="matches-section" spacing="12">
           <Label class="profile-section" text="My Matches" />
+          <Label class="matches-error"
+                 text="{{ matchSyncError }}"
+                 textWrap="true"
+                 visibility="{{ matchSyncError ? 'visible' : 'collapse' }}" />
           <Label class="matches-empty"
                  text="No matches yet. Play a game to start your library."
                  textWrap="true"
