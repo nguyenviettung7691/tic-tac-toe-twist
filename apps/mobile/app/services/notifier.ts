@@ -1,5 +1,15 @@
 import { Dialogs, Utils, isAndroid, isIOS } from '@nativescript/core'
 
+declare const android: any
+declare const UIApplication: any
+declare const UILabel: any
+declare const UIColor: any
+declare const NSTextAlignmentCenter: number
+declare function CGSizeMake(width: number, height: number): any
+declare function CGRectMake(x: number, y: number, width: number, height: number): any
+declare const UIView: any
+declare const UIViewAnimationOptions: any
+
 let alertQueue: Promise<void> = Promise.resolve()
 
 function showAndroidToast(message: string, long = false) {
