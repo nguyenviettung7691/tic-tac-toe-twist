@@ -11,10 +11,21 @@
             </FormattedString>
           </Label>
         </FlexboxLayout>
-        <FlexboxLayout col="1" class="avatar-container" horizontalAlignment="right" verticalAlignment="center" tap="onAvatarTap" justifyContent="center" alignItems="center">
-          <Image class="avatar-image" src="{{ authAvatarUrl }}" visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
-          <Label class="avatar-initial" text="{{ authInitial }}" visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
-          <Label class="avatar-login" text="⎆" visibility="{{ authLoggedIn ? 'collapse' : 'visible' }}" />
+                <FlexboxLayout col="1" class="avatar-container" horizontalAlignment="right" verticalAlignment="center" tap="onAvatarTap" justifyContent="center" alignItems="center">
+          <GridLayout rows="auto" columns="auto">
+            <Image class="avatar-image" src="{{ authAvatarUrl }}" visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
+            <Label class="avatar-initial" text="{{ authInitial }}" visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
+            <Label class="avatar-login" text="⎆" visibility="{{ authLoggedIn ? 'collapse' : 'visible' }}" />
+            <StackLayout class="avatar-badge"
+                         visibility="{{ badgeVisible ? 'visible' : 'collapse' }}"
+                         horizontalAlignment="right"
+                         verticalAlignment="top">
+              <Label class="avatar-badge-icon"
+                     text="{{ badgeIcon }}"
+                     horizontalAlignment="center"
+                     verticalAlignment="center" />
+            </StackLayout>
+          </GridLayout>
         </FlexboxLayout>
       </GridLayout>
     </ActionBar.titleView>
@@ -151,3 +162,4 @@
 
   </GridLayout>
 </Page>
+

@@ -12,12 +12,14 @@ import {
 
 import { startNewGame } from '~/state/game-store';
 import { bindAuthTo } from '~/state/auth-bindings';
+import { bindBadgeTo } from '~/state/badge-bindings';
 import { navigateToPlay, navigateToProfile, navigateToAbout } from '~/services/navigation';
 
 import { HomeViewModel, type PowerOptionVm, type VariantOptionVm } from './home-view-model';
 
 let viewModel: HomeViewModel | null = null;
 let authUnsubscribe: (() => void) | null = null;
+let badgeUnsubscribe: (() => void) | null = null;
 
 export function onNavigatingTo(args: NavigatedData) {
   const page = args.object as Page;
@@ -26,6 +28,9 @@ export function onNavigatingTo(args: NavigatedData) {
   viewModel.set('navActive', 'play');
   if (!authUnsubscribe) {
     authUnsubscribe = bindAuthTo(viewModel);
+  }
+  if (!badgeUnsubscribe) {
+    badgeUnsubscribe = bindBadgeTo(viewModel);
   }
 }
 

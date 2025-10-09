@@ -5,6 +5,7 @@ import {
   clearAuthError,
   signInWithGoogle,
 } from '~/state/auth-store'
+import { bindBadgeTo } from '~/state/badge-bindings'
 import {
   navigateToAbout,
   navigateToPlay,
@@ -13,13 +14,19 @@ import {
 
 let viewModel: Observable | null = null
 let detachAuth: (() => void) | null = null
+let detachBadge: (() => void) | null = null
 
 function ensureViewModel() {
   if (!viewModel) {
     viewModel = new Observable()
     viewModel.set('navActive', 'profile')
     viewModel.set('formError', '')
+  }
+  if (!detachAuth) {
     detachAuth = bindAuthTo(viewModel)
+  }
+  if (!detachBadge) {
+    detachBadge = bindBadgeTo(viewModel)
   }
   return viewModel
 }

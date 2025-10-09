@@ -23,6 +23,7 @@ import {
   type GameSnapshot,
 } from '~/state/game-store';
 import { bindAuthTo } from '~/state/auth-bindings';
+import { bindBadgeTo } from '~/state/badge-bindings';
 import { navigateToPlay, navigateToProfile, navigateToAbout } from '~/services/navigation';
 import { findWinningLine, formatReplayEntry } from '~/utils/game-format';
 
@@ -45,6 +46,7 @@ let currentPage: Page | null = null;
 let confettiTimer: ReturnType<typeof setTimeout> | null = null;
 let replayTimer: ReturnType<typeof setTimeout> | null = null;
 let authBindingDetach: (() => void) | null = null;
+let badgeBindingDetach: (() => void) | null = null;
 
 interface PendingDoubleMove {
   armed: boolean;
@@ -160,6 +162,9 @@ export function onNavigatingTo(args: NavigatedData) {
   if (!authBindingDetach) {
     authBindingDetach = bindAuthTo(viewModel);
   }
+  if (!badgeBindingDetach) {
+    badgeBindingDetach = bindBadgeTo(viewModel);
+  }
 
   unsubscribe?.();
   unsubscribe = subscribe((snapshot) => updateViewModel(viewModel!, snapshot));
@@ -185,6 +190,8 @@ export function onNavigatingFrom() {
   resetPendingDoubleMove();
   resetPendingBomb();
   currentPage = null;
+  badgeBindingDetach?.();
+  badgeBindingDetach = null;
 }
 
 export function onCellTap(args: GestureEventData) {

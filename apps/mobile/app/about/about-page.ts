@@ -1,10 +1,12 @@
 import { NavigatedData, Observable, Page } from '@nativescript/core'
 
 import { bindAuthTo } from '~/state/auth-bindings'
+import { bindBadgeTo } from '~/state/badge-bindings'
 import { navigateToPlay, navigateToProfile, navigateToAbout } from '~/services/navigation'
 
 let viewModel: Observable | null = null
 let detachAuth: (() => void) | null = null
+let detachBadge: (() => void) | null = null
 
 function ensureViewModel() {
   if (!viewModel) {
@@ -13,6 +15,9 @@ function ensureViewModel() {
   }
   if (!detachAuth) {
     detachAuth = bindAuthTo(viewModel)
+  }
+  if (!detachBadge) {
+    detachBadge = bindBadgeTo(viewModel)
   }
   return viewModel
 }
@@ -27,6 +32,8 @@ export function onNavigatingTo(args: NavigatedData) {
 export function onNavigatingFrom() {
   detachAuth?.()
   detachAuth = null
+  detachBadge?.()
+  detachBadge = null
 }
 
 export function onNavPlay() {
