@@ -95,6 +95,7 @@ Achievements:
 - The profile screen now lists every built-in achievement with live progress (first win, streaks, variant specialists, etc.).
 - Progress bumps and unlocks trigger in-app toasts/alerts immediately after a match is saved.
 - Progress data syncs to Firestore so achievements follow the player across devices.
+- Players can showcase an unlocked achievement as a profile badge; avatar overlays stay synced via Firestore.
 
 Animations on result screen:
 

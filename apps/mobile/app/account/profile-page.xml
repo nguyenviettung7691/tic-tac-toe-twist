@@ -18,15 +18,26 @@
                       tap="onAvatarTap"
                       justifyContent="center"
                       alignItems="center">
-          <Image class="avatar-image"
-                 src="{{ authAvatarUrl }}"
-                 visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
-          <Label class="avatar-initial"
-                 text="{{ authInitial }}"
-                 visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
-          <Label class="avatar-login"
-                 text="⎆"
-                 visibility="{{ authLoggedIn ? 'collapse' : 'visible' }}" />
+          <GridLayout rows="auto" columns="auto">
+            <Image class="avatar-image"
+                   src="{{ authAvatarUrl }}"
+                   visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
+            <Label class="avatar-initial"
+                   text="{{ authInitial }}"
+                   visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
+            <Label class="avatar-login"
+                   text="LOGIN"
+                   visibility="{{ authLoggedIn ? 'collapse' : 'visible' }}" />
+            <StackLayout class="avatar-badge"
+                         visibility="{{ badgeVisible ? 'visible' : 'collapse' }}"
+                         horizontalAlignment="right"
+                         verticalAlignment="top">
+              <Label class="avatar-badge-icon"
+                     text="{{ badgeIcon }}"
+                     horizontalAlignment="center"
+                     verticalAlignment="center" />
+            </StackLayout>
+          </GridLayout>
         </FlexboxLayout>
       </GridLayout>
     </ActionBar.titleView>
@@ -35,18 +46,26 @@
   <GridLayout rows="*, auto">
     <ScrollView row="0">
       <StackLayout class="profile-screen" spacing="20">
-        <FlexboxLayout class="profile-avatar-shell"
-                       justifyContent="center"
-                       alignItems="center"
-                       horizontalAlignment="center"
-                       tap="onAvatarTap">
+        <GridLayout class="profile-avatar-shell"
+                    horizontalAlignment="center"
+                    verticalAlignment="center"
+                    tap="onAvatarTap">
           <Image class="profile-avatar"
                  src="{{ authAvatarUrl }}"
                  visibility="{{ authLoggedIn &amp;&amp; authAvatarUrl ? 'visible' : 'collapse' }}" />
           <Label class="profile-avatar-fallback"
                  text="{{ authInitial }}"
                  visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
-        </FlexboxLayout>
+          <StackLayout class="profile-badge"
+                       visibility="{{ badgeVisible ? 'visible' : 'collapse' }}"
+                       horizontalAlignment="right"
+                       verticalAlignment="top">
+            <Label class="profile-badge-icon"
+                   text="{{ badgeIcon }}"
+                   horizontalAlignment="center"
+                   verticalAlignment="center" />
+          </StackLayout>
+        </GridLayout>
         <StackLayout class="profile-card" spacing="12">
           <Label class="profile-name" text="{{ authDisplayName }}" />
           <Label class="profile-email" text="{{ authEmail }}" visibility="{{ authEmail ? 'visible' : 'collapse' }}" />
@@ -54,7 +73,7 @@
             <Label text="Linked providers:" />
             <Repeater items="{{ authProviderLabels }}">
               <Repeater.itemTemplate>
-                <Label class="profile-provider" text="{{ '‣' + $value }}" />
+                <Label class="profile-provider" text="{{ '- ' + $value }}" />
               </Repeater.itemTemplate>
             </Repeater>
           </StackLayout>
@@ -123,10 +142,15 @@
               <GridLayout columns="auto,*" class="{{ cssClass }}">
                 <Label col="0" class="achievement-icon" text="{{ icon }}" verticalAlignment="top" />
                 <StackLayout col="1" class="achievement-detail" spacing="4">
-                  <Label class="achievement-title" text="{{ title }}" />
+                  <FlexboxLayout alignItems="center">
+                    <Label class="achievement-title" text="{{ title }}" />
+                    <Label class="achievement-badge-tag"
+                         text="Selected"
+                         visibility="{{ isSelectedBadge ? 'visible' : 'collapse' }}" />
+                  </FlexboxLayout>
                   <Label class="achievement-description" text="{{ description }}" textWrap="true" />
                   <Label class="achievement-meta" text="{{ difficultyLabel }}" />
-                  <Label class="achievement-meta" text="{{ progressLabel }}" />
+                  <Label class="achievement-meta" text="{{ progressLabel }}" visibility="{{ progressLabel == 'Completed' ? 'collapse' : 'visible' }}" />
                   <Label class="achievement-earned"
                          text="{{ earnedDateLabel }}"
                          visibility="{{ earnedDateLabel ? 'visible' : 'collapse' }}" />

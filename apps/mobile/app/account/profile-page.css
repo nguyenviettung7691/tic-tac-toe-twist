@@ -196,3 +196,47 @@
   font-weight: 600;
   color: #1fa971;
 }
+.achievement-row--badge {
+  border-width: 2;
+  border-color: #1fa971;
+}
+
+.profile-badge {
+  width: 37;
+  height: 37;
+  border-radius: 18;
+  background-color: rgba(255, 255, 255, 0.95);
+  justify-content: center;
+  align-items: center;
+  border-width: 2;
+  border-color: rgba(31, 44, 63, 0.08);
+  padding: 1;
+}
+
+.profile-badge-icon {
+  font-size: 20;
+}
+
+.avatar-badge {
+  width: 14;
+  height: 14;
+  border-radius: 7;
+  background-color: rgba(255, 255, 255, 0.95);
+  justify-content: center;
+  align-items: center;
+  border-color: rgba(31, 44, 63, 0.2);
+}
+
+.avatar-badge-icon {
+  font-size: 6;
+}
+
+.achievement-badge-tag {
+  font-size: 11;
+  font-weight: 600;
+  color: #1fa971;
+  background-color: rgba(31, 169, 113, 0.12);
+  padding: 2 8;
+  border-radius: 10;
+  margin-left: 2;
+}

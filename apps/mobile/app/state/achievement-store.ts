@@ -55,8 +55,19 @@ interface StoredAchievementEntry {
 }
 
 type UserAchievementState = Record<string, StoredAchievementEntry>
+interface UserAchievementBundle {
+  entries: UserAchievementState
+  badgeId: string | null
+  updatedAtIso: string
+}
+
+export interface AchievementSnapshot {
+  achievements: AchievementProgress[]
+  badgeId: string | null
+}
+
 interface AchievementCache {
-  [userId: string]: UserAchievementState
+  [userId: string]: UserAchievementBundle
 }
 
 const definitions: AchievementDefinition[] = [
@@ -181,7 +192,7 @@ const remoteSyncDisabled = new Set<string>()
 const ensuredUserDocs = new Set<string>()
 const pendingRemoteWrites = new Map<string, string>()
 const lastRemoteSnapshots = new Map<string, string>()
-type AchievementListener = (achievements: AchievementProgress[]) => void
+type AchievementListener = (snapshot: AchievementSnapshot) => void
 const listeners = new Map<string, Set<AchievementListener>>()
 let cache: AchievementCache | null = null
 let firestoreInstance: Firestore | null = null
@@ -237,9 +248,13 @@ function ensureCache(): AchievementCache {
     return cache
   }
   try {
-    const parsed = JSON.parse(raw) as AchievementCache
+    const parsed = JSON.parse(raw) as Record<string, unknown>
     if (parsed && typeof parsed === 'object') {
-      cache = parsed
+      const normalized: AchievementCache = Object.create(null)
+      Object.keys(parsed).forEach((userId) => {
+        normalized[userId] = normalizeBundle(parsed[userId])
+      })
+      cache = normalized
     } else {
       cache = Object.create(null)
     }
@@ -268,31 +283,109 @@ function cloneEntry(entry: StoredAchievementEntry): StoredAchievementEntry {
   }
 }
 
-function getUserState(userId: string): UserAchievementState {
-  const state = ensureCache()
-  const existing = state[userId]
-  if (existing) {
-    const copy: UserAchievementState = {}
-    Object.keys(existing).forEach((key) => {
-      copy[key] = cloneEntry(existing[key])
-    })
-    return copy
-  }
-  return Object.create(null)
-}
-
-function setUserState(userId: string, state: UserAchievementState) {
-  const root = ensureCache()
-  root[userId] = cloneState(state)
-  persist()
-}
-
 function cloneState(state: UserAchievementState): UserAchievementState {
   const copy: UserAchievementState = {}
   Object.keys(state).forEach((key) => {
     copy[key] = cloneEntry(state[key])
   })
   return copy
+}
+
+function cloneBundle(bundle: UserAchievementBundle): UserAchievementBundle {
+  return {
+    entries: cloneState(bundle.entries),
+    badgeId: bundle.badgeId,
+    updatedAtIso: bundle.updatedAtIso,
+  }
+}
+
+function createEmptyBundle(): UserAchievementBundle {
+  return {
+    entries: Object.create(null),
+    badgeId: null,
+    updatedAtIso: new Date().toISOString(),
+  }
+}
+
+function normalizeBundle(raw: unknown): UserAchievementBundle {
+  if (!raw || typeof raw !== 'object') {
+    return createEmptyBundle()
+  }
+  const source = raw as Record<string, unknown>
+  const entriesRaw = source.entries ?? raw
+  const badgeValue = source.badgeId
+  const badgeId = typeof badgeValue === 'string' && badgeValue ? badgeValue : null
+  const updatedAtIso =
+    typeof source.updatedAtIso === 'string' && source.updatedAtIso ? (source.updatedAtIso as string) : new Date().toISOString()
+  return {
+    entries: sanitizeEntries(entriesRaw),
+    badgeId,
+    updatedAtIso,
+  }
+}
+
+function sanitizeEntries(raw: unknown): UserAchievementState {
+  if (!raw || typeof raw !== 'object') {
+    return Object.create(null)
+  }
+  const input = raw as Record<string, unknown>
+  const state: UserAchievementState = Object.create(null)
+  Object.keys(input).forEach((key) => {
+    const value = input[key]
+    if (!value || typeof value !== 'object') {
+      return
+    }
+    const parsed = value as Record<string, unknown>
+    const progress = Number(parsed.progress)
+    const target = Number(parsed.target)
+    const updatedAtIso =
+      typeof parsed.updatedAtIso === 'string' && parsed.updatedAtIso
+        ? (parsed.updatedAtIso as string)
+        : new Date().toISOString()
+    const earnedAtIso =
+      typeof parsed.earnedAtIso === 'string' && parsed.earnedAtIso ? (parsed.earnedAtIso as string) : null
+    state[key] = buildEntry(progress, target, earnedAtIso, updatedAtIso)
+  })
+  return state
+}
+
+function getUserBundle(userId: string): UserAchievementBundle {
+  const state = ensureCache()
+  const existing = state[userId]
+  if (existing) {
+    return cloneBundle(existing)
+  }
+  return createEmptyBundle()
+}
+
+function setUserBundle(userId: string, bundle: UserAchievementBundle) {
+  const root = ensureCache()
+  root[userId] = cloneBundle(bundle)
+  persist()
+}
+
+function toSnapshot(bundle: UserAchievementBundle): AchievementSnapshot {
+  const achievements = definitions.map((definition) => {
+    const stored = bundle.entries[definition.id]
+    const safeProgress = stored ? stored.progress : 0
+    const safeTarget = stored ? stored.target : definition.target
+    return {
+      id: definition.id,
+      title: definition.title,
+      description: definition.description,
+      icon: definition.icon,
+      difficulty: definition.difficulty,
+      progress: safeProgress,
+      target: safeTarget,
+      earned: stored ? stored.earned : false,
+      earnedAtIso: stored ? stored.earnedAtIso : null,
+      updatedAtIso: stored ? stored.updatedAtIso : new Date().toISOString(),
+    }
+  })
+  return {
+    achievements,
+    badgeId: bundle.badgeId,
+  }
 }
 
 function statesEqual(a: UserAchievementState, b: UserAchievementState): boolean {
@@ -425,7 +518,7 @@ function sanitizeRemoteEntry(raw: unknown): StoredAchievementEntry | null {
   return entry
 }
 
-function sanitizeRemoteState(data: DocumentData | undefined): { state: UserAchievementState; updatedAtIso: string } | null {
+function sanitizeRemoteState(data: DocumentData | undefined): UserAchievementBundle | null {
   if (!data || typeof data !== 'object') {
     return null
   }
@@ -439,10 +532,15 @@ function sanitizeRemoteState(data: DocumentData | undefined): { state: UserAchie
   })
   const updatedAtIso =
     typeof data.updatedAtIso === 'string' && data.updatedAtIso ? data.updatedAtIso : new Date().toISOString()
-  return { state, updatedAtIso }
+  const badgeId = typeof data.badgeId === 'string' && data.badgeId ? data.badgeId : null
+  return {
+    entries: state,
+    badgeId,
+    updatedAtIso,
+  }
 }
 
-async function pushAchievementsToFirestore(userId: string, state: UserAchievementState) {
+async function pushAchievementsToFirestore(userId: string, bundle: UserAchievementBundle) {
   if (!userId) {
     return
   }
@@ -454,14 +552,15 @@ async function pushAchievementsToFirestore(userId: string, state: UserAchievemen
     if (!docRef) {
       return
     }
-    const updatedAtIso = new Date().toISOString()
+    const updatedAtIso = bundle.updatedAtIso || new Date().toISOString()
     pendingRemoteWrites.set(userId, updatedAtIso)
     const entries: Record<string, StoredAchievementEntry> = {}
-    Object.keys(state).forEach((key) => {
-      entries[key] = { ...state[key] }
+    Object.keys(bundle.entries).forEach((key) => {
+      entries[key] = { ...bundle.entries[key] }
     })
     await docRef.set({
       entries,
+      badgeId: bundle.badgeId ?? null,
       updatedAtIso,
       version: 1,
       updatedAt: FieldValue.serverTimestamp(),
@@ -528,11 +627,19 @@ async function ensureRemoteSubscription(userId: string) {
       if (!payload) {
         return
       }
-      const { state, updatedAtIso } = payload
+      const { updatedAtIso } = payload
       const pendingIso = pendingRemoteWrites.get(userId)
       if (pendingIso && pendingIso === updatedAtIso) {
         pendingRemoteWrites.delete(userId)
         lastRemoteSnapshots.set(userId, updatedAtIso)
+        const currentBundle = getUserBundle(userId)
+        if (
+          currentBundle.badgeId !== payload.badgeId ||
+          !statesEqual(currentBundle.entries, payload.entries)
+        ) {
+          setUserBundle(userId, payload)
+          notify(userId, toSnapshot(payload))
+        }
         return
       }
       const previousIso = lastRemoteSnapshots.get(userId)
@@ -541,15 +648,17 @@ async function ensureRemoteSubscription(userId: string) {
       if (previousIso && parsedPrev && parsedCurrent && parsedCurrent <= parsedPrev) {
         return
       }
-      const nextState = cloneState(state)
-      const currentState = getUserState(userId)
-      if (statesEqual(currentState, nextState)) {
+      const currentBundle = getUserBundle(userId)
+      if (
+        currentBundle.badgeId === payload.badgeId &&
+        statesEqual(currentBundle.entries, payload.entries)
+      ) {
         lastRemoteSnapshots.set(userId, updatedAtIso)
         return
       }
-      setUserState(userId, nextState)
+      setUserBundle(userId, payload)
       lastRemoteSnapshots.set(userId, updatedAtIso)
-      notify(userId, toSnapshot(nextState))
+      notify(userId, toSnapshot(payload))
     },
     (error) => {
       if (isPermissionDenied(error)) {
@@ -574,27 +683,7 @@ async function ensureRemoteSubscription(userId: string) {
   remoteSubscriptions.set(userId, unsubscribe)
 }
 
-function toSnapshot(entries: UserAchievementState): AchievementProgress[] {
-  return definitions.map((definition) => {
-    const stored = entries[definition.id]
-    const safeProgress = stored ? stored.progress : 0
-    const safeTarget = stored ? stored.target : definition.target
-    return {
-      id: definition.id,
-      title: definition.title,
-      description: definition.description,
-      icon: definition.icon,
-      difficulty: definition.difficulty,
-      progress: safeProgress,
-      target: safeTarget,
-      earned: stored ? stored.earned : false,
-      earnedAtIso: stored ? stored.earnedAtIso : null,
-      updatedAtIso: stored ? stored.updatedAtIso : new Date().toISOString(),
-    }
-  })
-}
-
-function notify(userId: string, snapshot: AchievementProgress[]) {
+function notify(userId: string, snapshot: AchievementSnapshot) {
   const set = listeners.get(userId)
   if (!set || set.size === 0) {
     return
@@ -979,7 +1068,7 @@ function isPermissionDenied(error: unknown): boolean {
 export function subscribeToAchievements(userId: string, listener: AchievementListener): () => void {
   if (!userId) {
     try {
-      listener([])
+      listener({ achievements: [], badgeId: null })
     } catch (error) {
       console.error('[achievements] Immediate listener call failed', error)
     }
@@ -989,8 +1078,8 @@ export function subscribeToAchievements(userId: string, listener: AchievementLis
   set.add(listener)
   listeners.set(userId, set)
   try {
-    const state = getUserState(userId)
-    listener(toSnapshot(state))
+    const bundle = getUserBundle(userId)
+    listener(toSnapshot(bundle))
   } catch (error) {
     console.error('[achievements] Immediate listener call failed', error)
   }
@@ -1018,17 +1107,26 @@ export function updateAchievementsFromMatches(
     return
   }
   try {
-    const previous = getUserState(userId)
-    const next = evaluate(matches)
-    const changed = !statesEqual(previous, next)
-    setUserState(userId, next)
-    notify(userId, toSnapshot(next))
-    if (changed || !lastRemoteSnapshots.has(userId)) {
-      void pushAchievementsToFirestore(userId, next)
+    const previousBundle = getUserBundle(userId)
+    const nextEntries = evaluate(matches)
+    const badgeStillEarned =
+      previousBundle.badgeId && nextEntries[previousBundle.badgeId]?.earned ? previousBundle.badgeId : null
+    const updatedAtIso = new Date().toISOString()
+    const nextBundle: UserAchievementBundle = {
+      entries: nextEntries,
+      badgeId: badgeStillEarned,
+      updatedAtIso,
+    }
+    const entriesChanged = !statesEqual(previousBundle.entries, nextEntries)
+    const badgeChanged = previousBundle.badgeId !== nextBundle.badgeId
+    setUserBundle(userId, nextBundle)
+    notify(userId, toSnapshot(nextBundle))
+    if (entriesChanged || badgeChanged || !lastRemoteSnapshots.has(userId)) {
+      void pushAchievementsToFirestore(userId, nextBundle)
     }
 
     if (shouldEmitNotifications(options.source)) {
-      const { progressIncreases, newlyEarned } = diffStates(previous, next)
+      const { progressIncreases, newlyEarned } = diffStates(previousBundle.entries, nextEntries)
       if (progressIncreases.length) {
         emitProgressNotifications(progressIncreases)
       }
@@ -1041,10 +1139,41 @@ export function updateAchievementsFromMatches(
   }
 }
 
-export function getAchievements(userId: string): AchievementProgress[] {
+export function getAchievements(userId: string): AchievementSnapshot {
   if (!userId) {
-    return []
+    return { achievements: [], badgeId: null }
   }
-  const state = getUserState(userId)
-  return toSnapshot(state)
+  const bundle = getUserBundle(userId)
+  return toSnapshot(bundle)
+}
+
+export function getSelectedBadgeId(userId: string): string | null {
+  if (!userId) {
+    return null
+  }
+  return getUserBundle(userId).badgeId
+}
+
+export function setSelectedBadge(userId: string, achievementId: string | null) {
+  if (!userId) {
+    return
+  }
+  try {
+    const current = getUserBundle(userId)
+    const normalizedId =
+      achievementId && current.entries[achievementId]?.earned ? achievementId : null
+    if (current.badgeId === normalizedId) {
+      return
+    }
+    const nextBundle: UserAchievementBundle = {
+      entries: cloneState(current.entries),
+      badgeId: normalizedId,
+      updatedAtIso: new Date().toISOString(),
+    }
+    setUserBundle(userId, nextBundle)
+    notify(userId, toSnapshot(nextBundle))
+    void pushAchievementsToFirestore(userId, nextBundle)
+  } catch (error) {
+    console.error('[achievements] Failed to set badge', error)
+  }
 }

@@ -13,7 +13,12 @@ import {
   subscribeToMatches,
   type StoredMatch,
 } from '~/state/match-store'
-import { subscribeToAchievements, type AchievementProgress } from '~/state/achievement-store'
+import {
+  subscribeToAchievements,
+  setSelectedBadge,
+  type AchievementProgress,
+  type AchievementSnapshot,
+} from '~/state/achievement-store'
 import {
   navigateToAbout,
   navigateToLogin,
@@ -58,6 +63,7 @@ interface AchievementVM {
   earnedDateLabel: string
   cssClass: string
   earned: boolean
+  isSelectedBadge: boolean
 }
 
 function ensureViewModel() {
@@ -70,6 +76,9 @@ function ensureViewModel() {
     viewModel.set('matchRows', [] as MatchRowVM[])
     viewModel.set('matchSyncError', '')
     viewModel.set('achievements', [] as AchievementVM[])
+    viewModel.set('badgeIcon', '')
+    viewModel.set('badgeVisible', false)
+    viewModel.set('badgeSelectedId', '')
   }
   if (!detachAuth) {
     detachAuth = bindAuthTo(viewModel)
@@ -106,6 +115,9 @@ function clearMatches() {
 function clearAchievements() {
   const vm = ensureViewModel()
   vm.set('achievements', [] as AchievementVM[])
+  vm.set('badgeIcon', '')
+  vm.set('badgeVisible', false)
+  vm.set('badgeSelectedId', '')
 }
 
 function formatDateLabel(iso: string): string {
@@ -232,9 +244,13 @@ function formatAchievementEarnedDate(iso: string | null): string {
   return `Earned ${formatDateLabel(iso)}`
 }
 
-function buildAchievementRow(entry: AchievementProgress): AchievementVM {
+function buildAchievementRow(entry: AchievementProgress, selectedBadgeId: string | null): AchievementVM {
   const earned = !!entry.earned
-  const cssClass = `achievement-row ${earned ? 'achievement-row--earned' : 'achievement-row--locked'}`
+  const cssParts = ['achievement-row', earned ? 'achievement-row--earned' : 'achievement-row--locked']
+  const isSelectedBadge = selectedBadgeId === entry.id && earned
+  if (isSelectedBadge) {
+    cssParts.push('achievement-row--badge')
+  }
   return {
     id: entry.id,
     icon: entry.icon,
@@ -243,15 +259,20 @@ function buildAchievementRow(entry: AchievementProgress): AchievementVM {
     difficultyLabel: `Difficulty: ${entry.difficulty}`,
     progressLabel: formatAchievementProgress(entry),
     earnedDateLabel: earned ? formatAchievementEarnedDate(entry.earnedAtIso) : '',
-    cssClass,
+    cssClass: cssParts.join(' '),
     earned,
+    isSelectedBadge,
   }
 }
 
-function updateAchievementBindings(achievements: AchievementProgress[]) {
+function updateAchievementBindings(snapshot: AchievementSnapshot) {
   const vm = ensureViewModel()
-  const rows = achievements.map(buildAchievementRow)
+  const rows = snapshot.achievements.map((achievement) => buildAchievementRow(achievement, snapshot.badgeId))
   vm.set('achievements', rows)
+  const selected = rows.find((row) => row.isSelectedBadge)
+  vm.set('badgeIcon', selected ? selected.icon : '')
+  vm.set('badgeVisible', !!selected)
+  vm.set('badgeSelectedId', selected ? selected.id : '')
 }
 
 function updateMatchSyncError(message: string | null) {
@@ -435,8 +456,52 @@ export function onNavAbout() {
   navigateToAbout(true)
 }
 
-export function onAvatarTap() {
-  // onEditDisplayName()
+export async function onAvatarTap() {
+  const state = getAuthState()
+  const user = state.user
+  if (!user) {
+    navigateToLogin()
+    return
+  }
+  const vm = ensureViewModel()
+  const achievements = (vm.get('achievements') as AchievementVM[]) ?? []
+  const earned = achievements.filter((item) => item.earned)
+  if (!earned.length) {
+    await Dialogs.alert({
+      title: 'No badges yet',
+      message: 'Win an achievement to unlock a badge you can display.',
+      okButtonText: 'OK',
+    })
+    return
+  }
+  const currentBadgeId = (vm.get('badgeSelectedId') as string) || ''
+  const optionMap = earned.map((item) => ({
+    id: item.id,
+    label: `${item.icon} ${item.title}${item.isSelectedBadge ? ' (current)' : ''}`,
+  }))
+  const removeLabel = 'Remove badge'
+  const actions = optionMap.map((option) => option.label)
+  if (currentBadgeId) {
+    actions.unshift(removeLabel)
+  }
+  const choice = await Dialogs.action({
+    title: 'Select badge',
+    message: 'Choose an earned achievement to feature over your avatar.',
+    cancelButtonText: 'Cancel',
+    actions,
+  })
+  if (!choice || choice === 'Cancel') {
+    return
+  }
+  if (choice === removeLabel) {
+    setSelectedBadge(user.uid, null)
+    return
+  }
+  const selected = optionMap.find((option) => option.label === choice)
+  if (!selected || selected.id === currentBadgeId) {
+    return
+  }
+  setSelectedBadge(user.uid, selected.id)
 }
 
 export function onUnloaded() {
