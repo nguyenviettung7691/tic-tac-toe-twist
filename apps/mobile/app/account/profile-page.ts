@@ -26,6 +26,7 @@ import {
   navigateToPlay,
   navigateToProfile,
 } from '~/services/navigation'
+import { showToast } from '~/services/notifier'
 
 let viewModel: Observable | null = null
 let detachAuth: (() => void) | null = null
@@ -420,6 +421,40 @@ export async function onSignOut() {
   }
 }
 
+export async function onAchievementTap(args: GestureEventData) {
+  const target = args.object as ViewBase | undefined
+  const context = target?.bindingContext as AchievementVM | null | undefined
+  if (!context) {
+    return
+  }
+  if (!context.earned) {
+    showToast('Earn this achievement to unlock it as a badge.')
+    return
+  }
+  const state = getAuthState()
+  const user = state.user
+  if (!user) {
+    navigateToLogin()
+    return
+  }
+  if (context.isSelectedBadge) {
+    showToast('This badge is already active.')
+    return
+  }
+  const confirmed = await Dialogs.confirm({
+    title: 'Set profile badge',
+    message: `Use "${context.title}" as your profile badge?`,
+    okButtonText: 'Set badge',
+    cancelButtonText: 'Cancel',
+  })
+  if (!confirmed) {
+    return
+  }
+  console.log('[profile] Setting badge from achievement tap', { achievementId: context.id })
+  setSelectedBadge(user.uid, context.id)
+  showToast(`${context.icon} ${context.title} is now your badge.`)
+}
+
 export function onMatchCardTap(args: GestureEventData) {
   const target = args.object as ViewBase | undefined
   const context = target?.bindingContext as MatchCardVM | null | undefined
@@ -477,6 +512,8 @@ export async function onAvatarTap() {
   const currentBadgeId = (vm.get('badgeSelectedId') as string) || ''
   const optionMap = earned.map((item) => ({
     id: item.id,
+    icon: item.icon,
+    title: item.title,
     label: `${item.icon} ${item.title}${item.isSelectedBadge ? ' (current)' : ''}`,
   }))
   const removeLabel = 'Remove badge'
@@ -495,13 +532,19 @@ export async function onAvatarTap() {
   }
   if (choice === removeLabel) {
     setSelectedBadge(user.uid, null)
+    showToast('Profile badge removed.')
     return
   }
   const selected = optionMap.find((option) => option.label === choice)
-  if (!selected || selected.id === currentBadgeId) {
+  if (!selected) {
+    return
+  }
+  if (selected.id === currentBadgeId) {
+    showToast('This badge is already active.')
     return
   }
   setSelectedBadge(user.uid, selected.id)
+  showToast(`${selected.icon} ${selected.title} is now your badge.`)
 }
 
 export function onUnloaded() {

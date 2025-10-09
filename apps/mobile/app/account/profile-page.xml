@@ -15,7 +15,6 @@
                       class="avatar-container"
                       horizontalAlignment="right"
                       verticalAlignment="center"
-                      tap="onAvatarTap"
                       justifyContent="center"
                       alignItems="center">
           <GridLayout rows="auto" columns="auto">
@@ -73,7 +72,7 @@
             <Label text="Linked providers:" />
             <Repeater items="{{ authProviderLabels }}">
               <Repeater.itemTemplate>
-                <Label class="profile-provider" text="{{ '- ' + $value }}" />
+                <Label class="profile-provider" text="{{ '› ' + $value }}" />
               </Repeater.itemTemplate>
             </Repeater>
           </StackLayout>
@@ -139,7 +138,7 @@
           <Label class="profile-section" text="My Achievements" />
           <Repeater items="{{ achievements }}">
             <Repeater.itemTemplate>
-              <GridLayout columns="auto,*" class="{{ cssClass }}">
+              <GridLayout columns="auto,*" class="{{ cssClass }}" tap="onAchievementTap">
                 <Label col="0" class="achievement-icon" text="{{ icon }}" verticalAlignment="top" />
                 <StackLayout col="1" class="achievement-detail" spacing="4">
                   <FlexboxLayout alignItems="center">
