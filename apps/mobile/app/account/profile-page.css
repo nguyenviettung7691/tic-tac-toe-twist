@@ -217,20 +217,6 @@
   font-size: 20;
 }
 
-.avatar-badge {
-  width: 14;
-  height: 14;
-  border-radius: 7;
-  background-color: rgba(255, 255, 255, 0.95);
-  justify-content: center;
-  align-items: center;
-  padding: 1;
-}
-
-.avatar-badge-icon {
-  font-size: 10;
-}
-
 .achievement-badge-tag {
   font-size: 11;
   font-weight: 600;

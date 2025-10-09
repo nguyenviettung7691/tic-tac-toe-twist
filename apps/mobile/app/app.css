@@ -86,18 +86,15 @@ ListPicker {
   text-align: center;
 }
 
-.avatar-badge {
-  width: 14;
-  height: 14;
-  border-radius: 7;
+.avatar-badge-icon {
+  font-size: 9;
+  width: 13;
+  height: 13;
+  border-radius: 10;
   background-color: rgba(255, 255, 255, 0.95);
   justify-content: center;
   align-items: center;
-  padding: 1;
-}
-
-.avatar-badge-icon {
-  font-size: 10;
+  padding: 0;
 }
 
 .icon-button {

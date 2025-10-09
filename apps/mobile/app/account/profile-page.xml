@@ -25,16 +25,16 @@
                    text="{{ authInitial }}"
                    visibility="{{ authLoggedIn &amp;&amp; !authAvatarUrl ? 'visible' : 'collapse' }}" />
             <Label class="avatar-login"
-                   text="LOGIN"
+                   text="⎆"
                    visibility="{{ authLoggedIn ? 'collapse' : 'visible' }}" />
             <StackLayout class="avatar-badge"
-                         visibility="{{ badgeVisible ? 'visible' : 'collapse' }}"
-                         horizontalAlignment="right"
-                         verticalAlignment="top">
+                        visibility="{{ badgeVisible ? 'visible' : 'collapse' }}"
+                        horizontalAlignment="right"
+                        verticalAlignment="top">
               <Label class="avatar-badge-icon"
-                     text="{{ badgeIcon }}"
-                     horizontalAlignment="center"
-                     verticalAlignment="center" />
+                    text="{{ badgeIcon }}"
+                    horizontalAlignment="center"
+                    verticalAlignment="center" />
             </StackLayout>
           </GridLayout>
         </FlexboxLayout>
