@@ -903,9 +903,10 @@ function deriveStats(matches: StoredMatch[]): DerivedStats {
 }
 
 function buildEntry(progress: number, target: number, earnedAtIso: string | null, updatedAtIso: string): StoredAchievementEntry {
-  const normalizedProgress = Number.isFinite(progress) ? progress : 0
+  const sanitizedProgress = Number.isFinite(progress) ? Math.max(0, progress) : 0
   const normalizedTarget = target > 0 ? target : 1
-  const earned = normalizedProgress >= normalizedTarget
+  const earned = sanitizedProgress >= normalizedTarget
+  const normalizedProgress = earned ? Math.min(sanitizedProgress, normalizedTarget) : sanitizedProgress
   return {
     progress: normalizedProgress,
     target: normalizedTarget,
