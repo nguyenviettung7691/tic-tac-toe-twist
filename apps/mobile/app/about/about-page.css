@@ -14,3 +14,8 @@
   font-size: 14;
   color: rgba(31, 44, 63, 0.75);
 }
+
+.link{
+  color: var(--color-deep-blue);
+  text-decoration: underline;
+}

@@ -1,4 +1,4 @@
-import { NavigatedData, Observable, Page } from '@nativescript/core'
+import { NavigatedData, Observable, Page, Utils } from '@nativescript/core'
 
 import { bindAuthTo } from '~/state/auth-bindings'
 import { bindBadgeTo } from '~/state/badge-bindings'
@@ -61,4 +61,18 @@ export function onNavAbout() {
   }
   vm.set('navActive', 'about')
   navigateToAbout(true)
+}
+
+export function onTapEmail(){
+  onOpenUrl({url: 'mailto:nvtung.harry@gmail.com'})
+}
+export function onTapRepo(){
+  onOpenUrl({url: 'https://github.com/nguyenviettung7691/tic-tac-toe-twist'})
+}
+
+function onOpenUrl(args: { url: string }) {
+  const url = args.url
+  if (url) {
+    Utils.openUrl(url)
+  }
 }

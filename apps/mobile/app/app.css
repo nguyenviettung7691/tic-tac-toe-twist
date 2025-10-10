@@ -16,7 +16,6 @@ Page {
 }
 
 ActionBar {
-  background-color: var(--color-background);
   color: var(--color-ink);
   android-elevation: 0;
 }

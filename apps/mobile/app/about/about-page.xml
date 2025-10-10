@@ -11,13 +11,13 @@
             </FormattedString>
           </Label>
         </FlexboxLayout>
-                <FlexboxLayout col="1"
-                      class="avatar-container"
-                      horizontalAlignment="right"
-                      verticalAlignment="center"
-                      tap="onNavProfile"
-                      justifyContent="center"
-                      alignItems="center">
+        <FlexboxLayout col="1"
+          class="avatar-container"
+          horizontalAlignment="right"
+          verticalAlignment="center"
+          tap="onNavProfile"
+          justifyContent="center"
+          alignItems="center">
           <GridLayout rows="auto" columns="auto">
             <Image class="avatar-image"
                    src="{{ authAvatarUrl }}"
@@ -46,13 +46,23 @@
   <GridLayout rows="*, auto">
     <ScrollView row="0">
       <StackLayout class="about-screen" spacing="16">
-        <Label class="about-heading" text="About Tic-Tac-Toe Twist" />
+        <Label class="about-heading" text="What's this game about?" />
         <Label class="about-copy"
                textWrap="true"
                text="Experiment with wild Tic-Tac-Toe variants, play through custom rulesets, and challenge the adaptive AI. More twists and social features are on the way." />
-        <Label class="about-copy"
-        textWrap="true"
-        text="Author: Nguyen Viet Tung - nvtung.harry@gmail.com" />
+        <Label class="about-copy" textWrap="true" text="Author: Nguyen Viet Tung" />
+        <Label class="about-copy" textWrap="true" tap="onTapEmail">
+          <FormattedString>
+            <Span text="Contact: " />
+            <Span text="nvtung.harry@gmail.com" class="link" />
+          </FormattedString>
+        </Label>
+        <Label class="about-copy" textWrap="true" tap="onTapRepo">
+          <FormattedString>
+            <Span text="Contribute: " />
+            <Span text="https://github.com/nguyenviettung7691/tic-tac-toe-twist" class="link" />
+          </FormattedString>
+        </Label>
       </StackLayout>
     </ScrollView>
 
