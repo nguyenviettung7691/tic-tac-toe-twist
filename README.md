@@ -1,63 +1,219 @@
-Tic-Tac-Toe-Twist
+Tic-Tac-Toe-Twist — overview
 
-An extendable, single‑player tic‑tac‑toe with twists. Cross‑device UI via NativeScript, shared TypeScript rules/AI engine, and a Genkit-powered AI service for dynamic difficulty and variant support.
+This repository is a TypeScript monorepo containing:
+
+- `apps/mobile` — NativeScript Core mobile app (UI + local flows)
+- `packages/engine` — shared TypeScript game engine (board, variants, move generation, heuristics, minimax)
+- `services/ai` — Node + Genkit service that exposes an AI `/move` endpoint used by the app
+
+The project uses npm workspaces (root `package.json`) — prefer running install/build commands from the repo root.
+
+Quick start
+
+1) Install dependencies (repo root):
+
+```powershell
+npm install
+```
+
+2) Build the engine (required before linking into the mobile app):
+
+```powershell
+npm run build:engine
+```
+
+3) Run the Genkit AI service (development):
+
+```powershell
+npm run dev:ai
+# or
+npm --workspace services/ai run dev
+```
+
+4) Run the mobile app (preferred via helper to avoid workspace issues):
+
+```powershell
+npm run mobile:android
+# append extra ns flags after --, e.g.:
+npm run mobile:android -- --device emulator-5554
+```
+
+Why the helper script? The repo includes `scripts/ns-mobile-run.js`. It wraps `ns run` and forces `--path apps/mobile` plus an env tweak so calling `ns` from the repo root avoids `ENOWORKSPACES` errors that occur inside npm workspaces.
+
+Important paths & anchors
+
+- `scripts/ns-mobile-run.js` — helper used by `npm run mobile:android`.
+- `packages/engine/src` — primary place to edit game logic and AI.
+- `packages/engine/package.json` — build and public exports (produces `dist/`).
+- `services/ai/src` — Express server + Genkit wiring. `.env.example` is provided.
+- `apps/mobile/app/services/api.ts` — mobile client calling `/move`.
+- `apps/mobile/App_Resources/Android/src/google-services.json` — Firebase placeholder (replace for Google Sign-In).
+
+Engine public API (anchors)
+
+- `createGame(config: VariantConfig): GameState`
+- `generateMoves(state: GameState): Move[]`
+- `applyMove(state: GameState, move: Move): GameState`
+- `checkWinner(state: GameState): { winner: 'X'|'O'|'Draw'|null }`
+- `evaluate(state: GameState, forPlayer: Player): number`
+- `bestMove(state: GameState, options?: { depth?: number }): Move`
+
+AI service contract
+
+- POST `/move` (default port 9191). Request `{ state, config?, difficulty? }` → Response `{ move }`.
+- Genkit Dev UI runs on `GENKIT_PORT` (default 3100) when enabled. See `services/ai/.env.example`.
+
+Project-specific gotchas
+
+- NativeScript CLI inside a workspace: prefer the helper script or use `ns ... --path apps/mobile` to avoid `ENOWORKSPACES`.
+- Engine linkage: `apps/mobile/package.json` references the engine as `file:../../packages/engine`. After `npm run build:engine` you may `cd apps/mobile && npm i ../../packages/engine --save` to re-link in development.
+- Firebase: replace `apps/mobile/App_Resources/Android/src/google-services.json` and ensure `apps/mobile/package.json` `nativescript.id` matches your Firebase Android app id.
+- Android emulator networking: use `http://10.0.2.2:9191` to reach the AI service running on host.
+
+Useful scripts (root `package.json`)
+
+- `npm run build:engine` — builds `packages/engine` (tsc -> `dist/`).
+- `npm run dev:ai` — runs the AI service dev server and Genkit UI.
+- `npm run build:ai` — builds the AI service workspace.
+- `npm run mobile:android` — helper to run the NativeScript app on Android via `scripts/ns-mobile-run.js`.
+- `npm run debug:android` — debug wrapper for the app.
+
+When editing
+
+- Prefer small, focused edits. Game rules belong in `packages/engine/src` and exported types live in `packages/engine/src/types.ts`.
+- If you change the `/move` API or move shapes, update `services/ai` and `apps/mobile/app/services/api.ts` accordingly.
+
+Next steps for contributors
+
+1. Build the engine:
+
+```powershell
+npm run build:engine
+```
+
+2. Run the AI service (separate terminal):
+
+```powershell
+npm run dev:ai
+```
+
+3. Run the mobile app (helper):
+
+```powershell
+npm run mobile:android
+```
+
+If you want, I can add smoke-test scripts for `packages/engine` and `services/ai` to automate basic sanity checks.
 
 ---
 
-Board Size: 3x3 (classic), 4x4, 5x5, 6x6. Win length configurable based on board size.
+AWS Deployment (proposed)
 
-Combine Fun Variants: Players can enable multiple compatible toggles at game start; conflicts are flagged.
-Variants can be a Rule, a One-Time-Power, or a Game Mode:
+This project does not currently include deployment manifests. Below are two practical, low-risk options to run the two components on AWS and recommendations for secrets, CI/CD and scaling.
 
-Rules are applied throughout the game:
+High-level architectures (recommended)
 
-- Gravity: Pieces fall to the lowest empty cell in the chosen column. (Connect Four style)
-- Wrap: Lines can wrap across edges (e.g., right edge continues at left).
-- Misere: You lose if you make a required win length row. (try not to win!)
-- Random Blocks: 1–3 cells blocked at start; cannot play there.
+- Option A (recommended for simplicity):
+   - `services/ai` → containerized and deployed to ECS Fargate behind an Application Load Balancer (HTTPS). The `packages/engine` code stays bundled inside the `services/ai` image (single deployable unit). Store Genkit/API keys in AWS Secrets Manager and pass them as task environment variables.
 
-Players can perform a One-Time-Power instead of placing a mark (unless OTP stated otherwise):
+- Option B (service separation):
+   - `services/ai` → ECS Fargate (or Lambda+API Gateway for lower traffic).
+   - `packages/engine` → publish as a Lambda Layer (or a small HTTP microservice in ECS) so other services can call the engine via Lambda or HTTP. Use this if you need independent autoscaling for compute-heavy evaluation.
 
-- Double Move: On the same turn, place 2 marks that are not in 1 cell space next to your other marks.
-- Lane Shift: Shift a selected row or column by one cell cyclically.
-- Bomb: Make a single cell unplayable for both players and also destroy any existing mark on the cell.
+Why these choices
 
-Game Modes change the overall game flow:
+- ECS Fargate is straightforward for Node services that require long-running connections, Genkit flows, and predictable networking.
+- Packaging the engine inside the AI container (Option A) minimizes cross-service complexity and is easiest to CI/CD. Use Option B if you want the engine to scale separately or share it across many services.
 
-- Chaos Mode: Each game randomly selects a random number of variants and OTPs.
+Secrets & configuration
 
----
+- Keep provider keys (Genkit/LLM keys) in AWS Secrets Manager or SSM Parameter Store (SecureString). Grant the ECS task role or Lambda execution role permission to read the secret.
+- Use environment variables in ECS Task Definitions or Lambda configuration to pass non-secret settings (PORT, DIFFICULTY defaults) and reference secrets at runtime.
 
-Architecture Overview
+Quick example: containerize `services/ai` and push to ECR (PowerShell)
 
-- apps/mobile (NativeScript Core + TypeScript):
-  - Cross‑device UI, animations, result screen, replay.
-  - Calls shared rules/AI for local play; calls Genkit AI service for advanced difficulty style.
-- packages/engine (TypeScript library):
-  - Board model, variant system, rules, win detection.
-  - Heuristic evaluator + alpha‑beta minimax (configurable depth).
-  - Move generator supports Classic, Board Size, Gravity, Wrap; stubs for complex variants.
-- services/ai (Node + Genkit):
-  - Exposes a `/move` endpoint and a Genkit Flow `chooseMove`.
-  - Hard: algorithmic search. Medium: heuristic search.
-- Data and Achievements:
-  - Local persistence + optional cloud sync with `@nativescript/firebase` (Auth + Firestore).
-  - Data model for profiles, achievements, and match history with replay.
+1) Prepare a `Dockerfile` in `services/ai/` (simple Node container). Example Dockerfile snippet (add to repo before using):
 
----
+```
+FROM node:18-alpine
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm ci --only=production
+COPY . .
+ENV NODE_ENV=production
+EXPOSE 9191
+CMD ["node", "dist/server.js"]
+```
 
-Monorepo Layout
+2) Build, tag and push to ECR (example commands):
 
-.
-├─ README.md
-├─ package.json            # npm workspaces (engine, AI service)
-├─ packages
-│  └─ engine
-│     ├─ package.json
-│     ├─ tsconfig.json
-│     └─ src
-│        ├─ index.ts
-│        ├─ types.ts
+```powershell
+# create ECR repo (one-time)
+aws ecr create-repository --repository-name tic-tac-toe-ai --region us-east-1
+
+# build and tag
+docker build -t tic-tac-toe-ai:latest services/ai
+$accountId = (aws sts get-caller-identity --query Account --output text)
+$repo = "$accountId.dkr.ecr.us-east-1.amazonaws.com/tic-tac-toe-ai"
+aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $repo
+docker tag tic-tac-toe-ai:latest $repo:latest
+docker push $repo:latest
+```
+
+3) Deploy to ECS Fargate
+- Use AWS Copilot (`copilot init`) or an AWS CloudFormation / Terraform template to create an ECS service, ALB, and auto-scaling. Copilot commands are quick:
+
+```powershell
+copilot init --app ttt --svc ai --dockerfile services/ai/Dockerfile --deploy
+```
+
+Engine packaging options
+
+- Option A (bundle): keep `packages/engine` compiled inside `services/ai` image. Build step in CI: `npm run build:engine` then copy `packages/engine/dist` into the image. Simple and recommended for initial deployments.
+
+- Option B (Lambda Layer): publish `packages/engine` as a Lambda Layer for other Lambda functions to consume. Example (PowerShell):
+
+```powershell
+# build the engine
+npm run build:engine
+
+# prepare layer directory
+mkdir layer_temp; mkdir layer_temp\nodejs; npm pack packages/engine --pack-destination .\layer_temp\nodejs
+# create a layer zip (ensure nodejs/node_modules/@ttt/engine structure)
+Compress-Archive -Path layer_temp\* -DestinationPath engine-layer.zip
+
+# publish layer
+$layerArn = aws lambda publish-layer-version --layer-name ttt-engine-layer --zip-file fileb://engine-layer.zip --compatible-runtimes nodejs18.x --query 'LayerVersionArn' --output text
+Write-Host "Published layer: $layerArn"
+```
+
+CI/CD recommendations
+
+- Use GitHub Actions to build images, run tests (if added), and push images to ECR. Use an Actions job that:
+   1. Runs `npm ci` at repo root
+   2. Runs `npm run build:engine`
+   3. Builds Docker image for `services/ai` and pushes to ECR
+   4. Deploys via Copilot or triggers CloudFormation/Terraform apply.
+- Store AWS credentials in GitHub Secrets and use least-privilege IAM for the CI role.
+
+Security & IAM
+
+- Create an ECS Task Role with permissions to read Secrets Manager secrets and optionally to call other AWS services.
+- If you publish the engine to CodeArtifact or use CodeBuild, create a CI role that can publish artifacts and push to ECR.
+
+Cost & scaling notes
+
+- Start with small Fargate tasks (0.25–0.5 vCPU) and scale based on CPU/Request metrics.
+- Lambda is cheaper for infrequent calls but may be more complex if Genkit dependencies require long-lived connections.
+
+Next steps I can implement
+
+- Add a sample `Dockerfile` under `services/ai/` and a minimal `ecs-copilot` manifest.
+- Create a GitHub Actions workflow template to build & push the AI image and build the engine.
+- Add a simple CloudFormation or Terraform sample for ECS + ALB.
+
+Tell me which of the above you'd like me to implement and I will create the required files and CI templates.
+
 │        ├─ board.ts
 │        ├─ variants.ts
 │        └─ ai

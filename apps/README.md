@@ -1,118 +1,103 @@
-Tic-Tac-Toe-Twist (NativeScript app)
+Tic-Tac-Toe-Twist (NativeScript mobile app)
 
-Generate and run the NativeScript app here, then link the shared engine and call the AI service.
+This folder contains the NativeScript Core + TypeScript mobile app that uses `@ttt/engine` for game logic and `services/ai` for the Genkit-powered move endpoint.
 
-Create the app:
+Quick setup
 
-1) From repo root: `cd apps`
-2) `ns create mobile --template @nativescript/template-blank-ts`
-3) `cd mobile && npm install`
+1. From repo root install workspaces:
 
-Add plugins:
-
-- `npm i @nativescript/firebase-core @nativescript/firebase-auth @nativescript/firebase-firestore`
-
-Link the shared engine:
-
-- From repo root: `npm run build:engine`
-- In this folder: `npm i ../../packages/engine --save`
-
-Run the mobile app:
-
-- From repo root: `npm run mobile:android`
-- Append extra NativeScript flags after `--`, e.g. `npm run mobile:android -- --device emulator-5554`
-- To target other platforms call the helper directly, e.g. `node scripts/ns-mobile-run.js ios --emulator`
-
-> NOTE: Running `ns run android` directly inside `apps/mobile` under npm workspaces triggers `ENOWORKSPACES`. Use the helper script (or pass `--path apps/mobile`) so npm reads a global config instead.
-
-Firebase setup:
-
-1. **Set the package name** — `apps/mobile/App_Resources/Android/app.gradle` now declares `applicationId "com.tictactoetwist"`. Create the matching Android app in Firebase, or adjust the ID in that file before the first build.
-2. **Add google-services.json** — replace the placeholder at `App_Resources/Android/src/google-services.json` with the file Firebase generates after you register the Android app. Keep the same path.
-3. **Fill in the Google OAuth client ID** — update `apps/mobile/app/config/firebase-client.ts` with your Google OAuth web client ID (used by Google sign-in).
-4. **Share signing hashes with Firebase** — generate the debug SHA-1/SHA-256 fingerprints that Firebase needs using:
-   ```sh
-   keytool -list -v `
-   -alias androiddebugkey `
-   -keystore "$env:USERPROFILE\.android\debug.keystore" `
-   -storepass android -keypass android
-   ```
-   > macOS/Linux: replace the keystore path with `~/.android/debug.keystore`.
-
-   Add the fingerprint(s) in the Firebase console so Google sign-in works on emulators and debug builds.
-5. (Optional) For release builds also add the iOS config (`GoogleService-Info.plist`) under `App_Resources/iOS` if you target iOS.
-6. Release fingerprints (for production builds):
-
-- Generate or locate your release keystore. If you need to create one, run:
-  ```sh
-  keytool -genkeypair -v -keystore tic-tac-toe.keystore -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias tic-tac-toe
-  ```
-  Remember the keystore path, alias, and passwords; you will need them for signing.
-- List the SHA fingerprints from that keystore and register them in Firebase alongside the debug ones:
-  ```sh
-  keytool -list -v -alias tic-tac-toe -keystore tic-tac-toe.keystore
-  ```
-  The command prompts for the store/key passwords and prints both SHA-1 and SHA-256 values. Copy them into Firebase > Project settings > Your apps.
-- If you later opt into Google Play App Signing, Google will generate its own signing certificate. Copy the "App signing certificate" SHA fingerprints from the Play Console and add them to Firebase as well so Google Sign-In keeps working in production.
-
-Build signed release APK (distribute app outside Google Play):
-
-- Generate a release fingerprints first (instructions above), then run:
-```sh
-ns clean
-ns build android --release --for-device --keyStorePath tic-tac-toe.keystore --keyStorePassword YOUR_STORE_PASSWORD --keyStoreAlias tic-tac-toe --keyStoreAliasPassword YOUR_ALIAS_PASSWORD
-```
-- Grab the APK: `apps/mobile/platforms/android/app/build/outputs/apk/release/app-release.apk`
-
-Publishing to Google Play:
-
-TBU
-
-Use in code:
-
-```ts
-// e.g., in app/pages/game/game-page.ts
-import { createGame, bestMove, defaultConfig } from '@ttt/engine';
-
-const config = { ...defaultConfig(), gravity: false, wrap: false };
-let state = createGame(config);
-
-// When AI turn:
-const mv = bestMove(state, state.current, { depth: 6 });
-// apply move through engine utilities in UI handler
+```powershell
+npm install
 ```
 
-Call the AI service (Genkit-powered):
+2. Build and link the shared engine before running the app (engine must be built so `dist/` is available):
 
-```ts
-const API_BASE = global.isAndroid ? 'http://10.0.2.2:9191' : 'http://localhost:9191';
-const resp = await fetch(`${API_BASE}/move`, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify({ state, config, difficulty: 'balanced' })
-});
-const json = await resp.json();
-// { move: { r, c } }
+```powershell
+npm run build:engine
+cd apps/mobile
+npm i ../../packages/engine --save
 ```
 
-Authentication UI:
+Running the app
 
-- The bottom navigation now links to dedicated `login`, `register`, and `profile` screens.
-- Avatar state in the ActionBar is driven from Firebase auth; once a user signs in you will see their photo (or initials) on every page.
-- Google sign-in uses the native SDK; ensure the OAuth client ID above is configured or the button will surface a configuration error message.
+- Preferred (from repo root, uses helper to avoid workspace ENOWORKSPACES):
 
-Achievements:
+```powershell
+npm run mobile:android
+# Add extra ns flags after --, e.g.:
+npm run mobile:android -- --device emulator-5554
+```
 
-- The profile screen now lists every built-in achievement with live progress (first win, streaks, variant specialists, etc.).
-- Progress bumps and unlocks trigger in-app toasts/alerts immediately after a match is saved.
-- Progress data syncs to Firestore so achievements follow the player across devices.
-- Players can showcase an unlocked achievement as a profile badge; avatar overlays stay synced via Firestore.
+- Alternative: run `ns` directly but include `--path` to avoid workspace issues:
 
-Animations on result screen:
+```powershell
+ns run android --path apps/mobile
+```
 
-- Use CSS confetti animation, and animate board overlays to show the winning line.
+Firebase notes
 
-Replay:
+- Replace the placeholder `apps/mobile/App_Resources/Android/src/google-services.json` with your Firebase Android config when you need Google Sign-In.
+- Ensure `apps/mobile/package.json` contains the `nativescript.id` that matches your Firebase Android app (default: `com.tictactoetwist`).
+- Update `apps/mobile/app/config/firebase-client.ts` with your OAuth client ID for Google sign-in.
 
-- Store `moves[]` in match state; step through history to animate playback.
+Engine & AI integration
+
+- The mobile app imports the engine as `@ttt/engine` (see `apps/mobile/package.json`).
+- The mobile app calls the AI service at `/move`. Android emulator mapping: `http://10.0.2.2:9191` (service default). See `apps/mobile/app/services/api.ts`.
+
+Helpful file anchors
+
+- `app/app.ts` — app bootstrap
+- `app/services/api.ts` — calls `/move` on the AI service
+- `app/state/match-store.ts` — match/move persistence and replay handling
+- `App_Resources/Android/src/google-services.json` — Firebase placeholder
+
+Troubleshooting
+
+- If `ns` errors with `ENOWORKSPACES`, use the helper script `scripts/ns-mobile-run.js` (this is what `npm run mobile:android` invokes).
+- If the emulator can't reach the AI API, confirm `services/ai` is running and use `10.0.2.2:9191` from Android.
+
+Testing and debug
+
+- Debugging helper (root):
+
+```powershell
+npm run debug:android
+```
+
+Release builds & signing
+
+- For release signing and Firebase production SHA fingerprints follow the usual keytool commands — keep keystore files outside source control.
+
+PowerShell keytool examples (copyable)
+
+Generate a release keystore:
+
+```powershell
+keytool -genkeypair -v -keystore tic-tac-toe.keystore -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias tic-tac-toe
+```
+
+List SHA fingerprints from a keystore:
+
+```powershell
+keytool -list -v -alias tic-tac-toe -keystore .\tic-tac-toe.keystore
+```
+
+Add the printed SHA-1 / SHA-256 values to your Firebase project settings so Google Sign-In works in production.
+
+PowerShell: extract only SHA-1 or SHA-256 (copyable)
+
+```powershell
+# SHA-1 only
+(& keytool -list -v -alias tic-tac-toe -keystore .\tic-tac-toe.keystore) -match 'SHA1:\s*([0-9A-Fa-f:]*)' | Out-Null; $matches[1]
+
+# SHA-256 only
+(& keytool -list -v -alias tic-tac-toe -keystore .\tic-tac-toe.keystore) -match 'SHA256:\s*([0-9A-Fa-f:]*)' | Out-Null; $matches[1]
+```
+
+Where to look for more details
+
+- Root `README.md` — overall architecture and developer workflow.
+- `packages/engine/README.md` — engine API and build notes.
+- `services/ai/README.md` — AI service API and setup.
 
