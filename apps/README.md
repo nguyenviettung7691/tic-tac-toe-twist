@@ -41,21 +41,32 @@ Firebase setup:
 
    Add the fingerprint(s) in the Firebase console so Google sign-in works on emulators and debug builds.
 5. (Optional) For release builds also add the iOS config (`GoogleService-Info.plist`) under `App_Resources/iOS` if you target iOS.
-
-Release fingerprints (for production builds):
+6. Release fingerprints (for production builds):
 
 - Generate or locate your release keystore. If you need to create one, run:
   ```sh
-  keytool -genkeypair -v -keystore /path/to/your-release.keystore \
-    -alias your_alias -keyalg RSA -keysize 2048 -validity 10000
+  keytool -genkeypair -v -keystore tic-tac-toe.keystore -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias tic-tac-toe
   ```
   Remember the keystore path, alias, and passwords; you will need them for signing.
 - List the SHA fingerprints from that keystore and register them in Firebase alongside the debug ones:
   ```sh
-  keytool -list -v -alias your_alias -keystore /path/to/your-release.keystore
+  keytool -list -v -alias tic-tac-toe -keystore tic-tac-toe.keystore
   ```
   The command prompts for the store/key passwords and prints both SHA-1 and SHA-256 values. Copy them into Firebase > Project settings > Your apps.
 - If you later opt into Google Play App Signing, Google will generate its own signing certificate. Copy the "App signing certificate" SHA fingerprints from the Play Console and add them to Firebase as well so Google Sign-In keeps working in production.
+
+Build signed release APK (distribute app outside Google Play):
+
+- Generate a release fingerprints first (instructions above), then run:
+```sh
+ns clean
+ns build android --release --for-device --keyStorePath tic-tac-toe.keystore --keyStorePassword YOUR_STORE_PASSWORD --keyStoreAlias tic-tac-toe --keyStoreAliasPassword YOUR_ALIAS_PASSWORD
+```
+- Grab the APK: `apps/mobile/platforms/android/app/build/outputs/apk/release/app-release.apk`
+
+Publishing to Google Play:
+
+TBU
 
 Use in code:
 
