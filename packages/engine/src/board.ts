@@ -19,6 +19,9 @@ export function cloneBoard(b: Cell[][]): Cell[][] {
 }
 
 export function place(b: Cell[][], r: number, c: number, p: Player): Cell[][] {
+  if (!Number.isInteger(r) || !Number.isInteger(c) || r < 0 || c < 0 || r >= b.length || c >= b[0].length) {
+    throw new Error(`Invalid position (${r}, ${c}): must be non-negative integers within board dimensions ${b.length}x${b[0].length}`);
+  }
   const nb = cloneBoard(b);
   nb[r][c] = p;
   return nb;
