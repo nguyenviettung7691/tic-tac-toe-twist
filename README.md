@@ -1,374 +1,317 @@
-Tic-Tac-Toe-Twist — overview
+# Tic-Tac-Toe Twist
 
-This repository is a TypeScript monorepo containing:
+A TypeScript monorepo for a mobile tic-tac-toe game with variant rules, power-ups, and an AI opponent powered by Google Gemini + minimax.
 
-- `apps/mobile` — NativeScript Core mobile app (UI + local flows)
-- `packages/engine` — shared TypeScript game engine (board, variants, move generation, heuristics, minimax)
-- `services/ai` — Node + Genkit service that exposes an AI `/move` endpoint used by the app
+## Architecture
 
-The project uses npm workspaces (root `package.json`) — prefer running install/build commands from the repo root.
+| Component | Path | Description |
+|-----------|------|-------------|
+| **Game Engine** | `packages/engine` | Pure TypeScript library — board model, rules, move generation, heuristics, and minimax with alpha-beta pruning. Published as `@ttt/engine`. |
+| **AI Service** | `services/ai` | Node.js + Express + Genkit microservice exposing a `/move` HTTP endpoint. Uses LLM suggestions (Google Gemini) with engine-based fallback. |
+| **Mobile App** | `apps/mobile` | NativeScript Core app (TypeScript) — game UI, variant selection, achievements, match history, and Firebase authentication. |
 
-Quick start
+The project uses **npm workspaces** (defined in the root `package.json`). Always run `npm install` from the repo root.
 
-1) Install dependencies (repo root):
+## Repository Structure
 
-```powershell
+```
+tic-tac-toe-twist/
+├── package.json                         # Root workspace config & scripts
+├── scripts/
+│   └── ns-mobile-run.js                 # NativeScript helper (avoids ENOWORKSPACES)
+├── patches/                             # patch-package patches
+├── packages/
+│   └── engine/
+│       ├── package.json                 # @ttt/engine
+│       ├── tsconfig.json
+│       └── src/
+│           ├── index.ts                 # Public API exports
+│           ├── types.ts                 # Core type definitions
+│           ├── board.ts                 # Board model, move generation, win detection
+│           ├── variants.ts              # Variant defaults & validation
+│           └── ai/
+│               ├── minimax.ts           # Alpha-beta search with transposition table
+│               └── heuristics.ts        # Position evaluation & scoring
+├── services/
+│   └── ai/
+│       ├── package.json                 # @ttt/ai-service
+│       ├── tsconfig.json
+│       ├── .env.example                 # Environment config template
+│       └── src/
+│           ├── server.ts                # Express HTTP server & routing
+│           ├── genkit.ts                # Genkit flow registration & dev UI
+│           └── flows/
+│               └── move.ts              # AI decision engine (LLM + engine fallback)
+└── apps/
+    └── mobile/
+        ├── package.json
+        ├── tsconfig.json
+        ├── App_Resources/
+        │   └── Android/src/
+        │       └── google-services.json # Firebase config (placeholder)
+        └── app/
+            ├── app.ts                   # Bootstrap entry point
+            ├── app-root.xml             # Frame / router
+            ├── app.css                  # Global styles
+            ├── config/
+            │   └── firebase-client.ts   # Firebase client configuration
+            ├── services/
+            │   ├── api.ts               # AI service HTTP client
+            │   ├── engine.ts            # Local engine wrapper
+            │   ├── firebase.ts          # Firebase initialization
+            │   ├── navigation.ts        # Router integration
+            │   └── notifier.ts          # Toast / alert notifications
+            ├── state/
+            │   ├── game-store.ts        # Game state management
+            │   ├── match-store.ts       # Match history & replay persistence
+            │   ├── auth-store.ts        # Authentication (Firebase + guest)
+            │   ├── achievement-store.ts # Achievement tracking & unlocks
+            │   ├── auth-bindings.ts     # Reactive auth bindings
+            │   └── badge-bindings.ts    # Reactive badge / UI bindings
+            ├── home/                    # Home page (variant selection, difficulty)
+            ├── game/                    # Game page (board UI, move logic, results)
+            ├── account/                 # Login, profile, match detail pages
+            ├── about/                   # About page
+            ├── assets/                  # Images and resources
+            └── utils/
+                └── game-format.ts       # Display formatting helpers
+```
+
+## Quick Start
+
+### Prerequisites
+
+- **Node.js 18+** and npm 9+
+- **NativeScript CLI**: `npm i -g nativescript`
+- **Android Studio** and/or **Xcode** for emulators (or real devices)
+- **Google Gemini API key** (optional — for LLM-powered AI moves)
+
+### 1. Install dependencies
+
+```bash
 npm install
 ```
 
-2) Build the engine (required before linking into the mobile app):
+### 2. Build the game engine
 
-```powershell
+```bash
 npm run build:engine
 ```
 
-3) Run the Genkit AI service (development):
+This compiles `packages/engine/src` to `packages/engine/dist` and is required before running the mobile app or AI service.
 
-```powershell
+### 3. Start the AI service (development)
+
+```bash
 npm run dev:ai
-# or
-npm --workspace services/ai run dev
 ```
 
-4) Run the mobile app (preferred via helper to avoid workspace issues):
+The Express API starts on port **9191** and the Genkit Dev UI on port **3100** (when enabled). To configure the LLM provider:
 
-```powershell
+```bash
+cd services/ai
+cp .env.example .env
+# Edit .env and set GOOGLE_GENAI_API_KEY=<your_key>
+```
+
+### 4. Run the mobile app
+
+```bash
 npm run mobile:android
-# append extra ns flags after --, e.g.:
+```
+
+Pass extra NativeScript flags after `--`:
+
+```bash
 npm run mobile:android -- --device emulator-5554
 ```
 
-Why the helper script? The repo includes `scripts/ns-mobile-run.js`. It wraps `ns run` and forces `--path apps/mobile` plus an env tweak so calling `ns` from the repo root avoids `ENOWORKSPACES` errors that occur inside npm workspaces.
+> **Why the helper script?** Running `ns` directly inside an npm workspace triggers `ENOWORKSPACES` errors. The repo includes `scripts/ns-mobile-run.js` which wraps `ns run` with `--path apps/mobile` and an env tweak to avoid this issue.
 
-Important paths & anchors
+## Root Scripts
 
-- `scripts/ns-mobile-run.js` — helper used by `npm run mobile:android`.
-- `packages/engine/src` — primary place to edit game logic and AI.
-- `packages/engine/package.json` — build and public exports (produces `dist/`).
-- `services/ai/src` — Express server + Genkit wiring. `.env.example` is provided.
-- `apps/mobile/app/services/api.ts` — mobile client calling `/move`.
-- `apps/mobile/App_Resources/Android/src/google-services.json` — Firebase placeholder (replace for Google Sign-In).
+| Script | Command | Description |
+|--------|---------|-------------|
+| `build:engine` | `npm run build:engine` | Build `packages/engine` (tsc → `dist/`) |
+| `dev:ai` | `npm run dev:ai` | Start AI service dev server + Genkit UI |
+| `build:ai` | `npm run build:ai` | Build AI service for production |
+| `mobile:android` | `npm run mobile:android` | Run mobile app on Android via helper script |
+| `debug:android` | `npm run debug:android` | Debug mobile app on Android emulator |
 
-Engine public API (anchors)
+## Game Engine (`packages/engine`)
 
-- `createGame(config: VariantConfig): GameState`
-- `generateMoves(state: GameState): Move[]`
-- `applyMove(state: GameState, move: Move): GameState`
-- `checkWinner(state: GameState): { winner: 'X'|'O'|'Draw'|null }`
-- `evaluate(state: GameState, forPlayer: Player): number`
-- `bestMove(state: GameState, options?: { depth?: number }): Move`
+### Public API
 
-AI service contract
+The engine is imported as `@ttt/engine`. Key exports:
 
-- POST `/move` (default port 9191). Request `{ state, config?, difficulty? }` → Response `{ move }`.
-- Genkit Dev UI runs on `GENKIT_PORT` (default 3100) when enabled. See `services/ai/.env.example`.
+#### Game Lifecycle
 
-Project-specific gotchas
+```typescript
+createGame(config: VariantConfig): GameState
+applyMove(state: GameState, move: Move): GameState
+legalMoves(state: GameState): Move[]
+checkWinner(state: GameState): Player | 'Draw' | null
+```
 
-- NativeScript CLI inside a workspace: prefer the helper script or use `ns ... --path apps/mobile` to avoid `ENOWORKSPACES`.
-- Engine linkage: `apps/mobile/package.json` references the engine as `file:../../packages/engine`. After `npm run build:engine` you may `cd apps/mobile && npm i ../../packages/engine --save` to re-link in development.
-- Firebase: replace `apps/mobile/App_Resources/Android/src/google-services.json` and ensure `apps/mobile/package.json` `nativescript.id` matches your Firebase Android app id.
-- Android emulator networking: use `http://10.0.2.2:9191` to reach the AI service running on host.
+#### AI
 
-Useful scripts (root `package.json`)
+```typescript
+bestMove(state: GameState, forPlayer: Player, opts?: { depth?: number; maxMillis?: number }): Move
+evaluate(state: GameState, forPlayer: Player): number
+```
 
-- `npm run build:engine` — builds `packages/engine` (tsc -> `dist/`).
-- `npm run dev:ai` — runs the AI service dev server and Genkit UI.
-- `npm run build:ai` — builds the AI service workspace.
-- `npm run mobile:android` — helper to run the NativeScript app on Android via `scripts/ns-mobile-run.js`.
-- `npm run debug:android` — debug wrapper for the app.
+#### Configuration
 
-When editing
+```typescript
+defaultConfig(): VariantConfig
+validateConfig(config: VariantConfig): { ok: true } | { ok: false; reason: string }
+```
 
-- Prefer small, focused edits. Game rules belong in `packages/engine/src` and exported types live in `packages/engine/src/types.ts`.
-- If you change the `/move` API or move shapes, update `services/ai` and `apps/mobile/app/services/api.ts` accordingly.
+#### Power-Up Helpers
 
-Next steps for contributors
+```typescript
+canUseDoubleMove(state: GameState): boolean
+isDoubleMoveLegal(state: GameState, move: Move): boolean
+isDoubleMoveFirstPlacementLegal(state: GameState, move: Move): boolean
+canUseBomb(state: GameState): boolean
+isBombLegal(state: GameState, move: Move): boolean
+canUseLaneShift(state: GameState): boolean
+isLaneShiftLegal(state: GameState, move: Move): boolean
+```
 
-1. Build the engine:
+All types (`Player`, `Cell`, `Move`, `GameState`, `VariantConfig`, `Difficulty`, `PowerUsage`, etc.) are also exported.
 
-```powershell
+### Variant Configuration
+
+The `VariantConfig` interface controls game rules:
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `boardSize` | `3 \| 4 \| 5 \| 6` | `3` | Board dimensions (N×N) |
+| `winLength` | `3 \| 4` | `3` | Consecutive marks needed to win |
+| `misere` | `boolean` | `false` | Inverse win condition (completing a line loses) |
+| `gravity` | `boolean` | `false` | Pieces fall to the bottom of the column |
+| `wrap` | `boolean` | `false` | Toroidal board (edges wrap around) |
+| `randomBlocks` | `number` | `0` | Number of randomly blocked cells at game start |
+| `doubleMove` | `boolean` | `false` | Enable double-move power-up (one-time use per player) |
+| `laneShift` | `boolean` | `false` | Enable lane-shift power-up |
+| `allowRowColShift` | `boolean` | `false` | Allow shifting rows and columns |
+| `bomb` | `boolean` | `false` | Enable bomb power-up (destroys a cell) |
+| `chaosMode` | `boolean` | `false` | Enable chaos mode |
+
+### AI Engine
+
+The minimax module (`ai/minimax.ts`) implements:
+
+- **Alpha-beta pruning** with negamax formulation
+- **Transposition table** for caching evaluated positions
+- **Iterative deepening** from depth 1 to target depth
+- **Move ordering** based on heuristic evaluation for pruning efficiency
+- **Timeout support** via `maxMillis` option
+
+Default search depths: **10** for 3×3 boards, **5** for larger boards.
+
+## AI Service (`services/ai`)
+
+### API Contract
+
+**`GET /health`** — Health check.
+
+```json
+{ "ok": true }
+```
+
+**`POST /move`** — Request an AI move.
+
+Request body:
+
+```json
+{
+  "state": { /* GameState */ },
+  "config": { /* VariantConfig */ },
+  "difficulty": "chill" | "balanced" | "sharp"
+}
+```
+
+Response:
+
+```json
+{
+  "move": { "r": 0, "c": 0 },
+  "strategy": "llm" | "engine" | "fallback",
+  "reason": "optional explanation"
+}
+```
+
+### Strategy Selection
+
+The AI service selects moves through a tiered strategy:
+
+1. **LLM** — Sends the board state to Google Gemini for a move suggestion. Validates the response against legal moves. Falls back on invalid or timed-out responses.
+2. **Engine** — Uses the local minimax engine with difficulty-based depth scaling:
+   - **Chill**: random legal move + shallow heuristic
+   - **Balanced**: heuristic + limited alpha-beta search
+   - **Sharp**: deeper alpha-beta or perfect play (3×3)
+3. **Fallback** — Returns the first legal move if all other strategies fail.
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `PORT` | `9191` | Express server port |
+| `GOOGLE_GENAI_API_KEY` | — | Google Gemini API key (enables LLM strategy) |
+| `GOOGLE_GENAI_MODEL` | `gemini-2.5-flash-lite` | Gemini model to use |
+| `GENKIT_PORT` | `3100` | Genkit Dev UI port |
+| `GENKIT_DISABLE_DEV_UI` | — | Set `true` to disable the Genkit Dev UI |
+| `NODE_ENV` | — | Set `production` to disable the Dev UI |
+
+## Mobile App (`apps/mobile`)
+
+The NativeScript Core app provides:
+
+- **Home screen** — Variant configuration, difficulty selection, and game start.
+- **Game screen** — Interactive board, move validation, AI integration, win/draw detection, confetti animations, and power-up controls.
+- **Results** — Match facts (variant toggles, turns, accuracy), win path overlay, and move replay with auto-play.
+- **Account** — Firebase authentication (Google Sign-In) with guest mode fallback. Profile page with match history.
+- **Achievements** — Unlock tracking with progress indicators, stored locally and synced to Firestore when signed in.
+
+### Key Integration Points
+
+- **Engine**: imported as `@ttt/engine` via `file:../../packages/engine` dependency.
+- **AI Service**: `app/services/api.ts` sends HTTP requests to `/move`. The client auto-discovers the service URL using platform-specific defaults (`http://10.0.2.2:9191` for Android emulator, `http://127.0.0.1:9191` for iOS simulator).
+- **Firebase**: `@nativescript/firebase-core`, `@nativescript/firebase-auth`, and `@nativescript/firebase-firestore` for authentication and cloud sync. Requires a valid `google-services.json` in `App_Resources/Android/src/`.
+
+### Data Model (Firestore)
+
+- `users/{uid}/profile` — name, avatar, createdAt
+- `users/{uid}/achievements/{id}` — unlockedAt, progress
+- `users/{uid}/matches/{matchId}` — config, moves[], winner, duration, createdAt
+
+## Development Notes
+
+### Engine Linkage
+
+`apps/mobile/package.json` references the engine as `file:../../packages/engine`. After rebuilding the engine, re-link from the mobile app directory:
+
+```bash
 npm run build:engine
+cd apps/mobile
+npm i ../../packages/engine --save
 ```
 
-2. Run the AI service (separate terminal):
+### Firebase Setup
 
-```powershell
-npm run dev:ai
-```
+1. Replace the placeholder `apps/mobile/App_Resources/Android/src/google-services.json` with your Firebase project config.
+2. Ensure the `nativescript.id` in `apps/mobile/package.json` (`com.tictactoetwist`) matches the Android app ID in your Firebase project.
 
-3. Run the mobile app (helper):
+### Android Emulator Networking
 
-```powershell
-npm run mobile:android
-```
+The Android emulator uses `10.0.2.2` to reach the host machine. The mobile app's API client handles this automatically, but if running the AI service on a custom port, update accordingly.
 
-If you want, I can add smoke-test scripts for `packages/engine` and `services/ai` to automate basic sanity checks.
+### Editing Guidelines
 
----
-
-AWS Deployment (proposed)
-
-This project does not currently include deployment manifests. Below are two practical, low-risk options to run the two components on AWS and recommendations for secrets, CI/CD and scaling.
-
-High-level architectures (recommended)
-
-- Option A (recommended for simplicity):
-   - `services/ai` → containerized and deployed to ECS Fargate behind an Application Load Balancer (HTTPS). The `packages/engine` code stays bundled inside the `services/ai` image (single deployable unit). Store Genkit/API keys in AWS Secrets Manager and pass them as task environment variables.
-
-- Option B (service separation):
-   - `services/ai` → ECS Fargate (or Lambda+API Gateway for lower traffic).
-   - `packages/engine` → publish as a Lambda Layer (or a small HTTP microservice in ECS) so other services can call the engine via Lambda or HTTP. Use this if you need independent autoscaling for compute-heavy evaluation.
-
-Why these choices
-
-- ECS Fargate is straightforward for Node services that require long-running connections, Genkit flows, and predictable networking.
-- Packaging the engine inside the AI container (Option A) minimizes cross-service complexity and is easiest to CI/CD. Use Option B if you want the engine to scale separately or share it across many services.
-
-Secrets & configuration
-
-- Keep provider keys (Genkit/LLM keys) in AWS Secrets Manager or SSM Parameter Store (SecureString). Grant the ECS task role or Lambda execution role permission to read the secret.
-- Use environment variables in ECS Task Definitions or Lambda configuration to pass non-secret settings (PORT, DIFFICULTY defaults) and reference secrets at runtime.
-
-Quick example: containerize `services/ai` and push to ECR (PowerShell)
-
-1) Prepare a `Dockerfile` in `services/ai/` (simple Node container). Example Dockerfile snippet (add to repo before using):
-
-```
-FROM node:18-alpine
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm ci --only=production
-COPY . .
-ENV NODE_ENV=production
-EXPOSE 9191
-CMD ["node", "dist/server.js"]
-```
-
-2) Build, tag and push to ECR (example commands):
-
-```powershell
-# create ECR repo (one-time)
-aws ecr create-repository --repository-name tic-tac-toe-ai --region us-east-1
-
-# build and tag
-docker build -t tic-tac-toe-ai:latest services/ai
-$accountId = (aws sts get-caller-identity --query Account --output text)
-$repo = "$accountId.dkr.ecr.us-east-1.amazonaws.com/tic-tac-toe-ai"
-aws ecr get-login-password --region us-east-1 | docker login --username AWS --password-stdin $repo
-docker tag tic-tac-toe-ai:latest $repo:latest
-docker push $repo:latest
-```
-
-3) Deploy to ECS Fargate
-- Use AWS Copilot (`copilot init`) or an AWS CloudFormation / Terraform template to create an ECS service, ALB, and auto-scaling. Copilot commands are quick:
-
-```powershell
-copilot init --app ttt --svc ai --dockerfile services/ai/Dockerfile --deploy
-```
-
-Engine packaging options
-
-- Option A (bundle): keep `packages/engine` compiled inside `services/ai` image. Build step in CI: `npm run build:engine` then copy `packages/engine/dist` into the image. Simple and recommended for initial deployments.
-
-- Option B (Lambda Layer): publish `packages/engine` as a Lambda Layer for other Lambda functions to consume. Example (PowerShell):
-
-```powershell
-# build the engine
-npm run build:engine
-
-# prepare layer directory
-mkdir layer_temp; mkdir layer_temp\nodejs; npm pack packages/engine --pack-destination .\layer_temp\nodejs
-# create a layer zip (ensure nodejs/node_modules/@ttt/engine structure)
-Compress-Archive -Path layer_temp\* -DestinationPath engine-layer.zip
-
-# publish layer
-$layerArn = aws lambda publish-layer-version --layer-name ttt-engine-layer --zip-file fileb://engine-layer.zip --compatible-runtimes nodejs18.x --query 'LayerVersionArn' --output text
-Write-Host "Published layer: $layerArn"
-```
-
-CI/CD recommendations
-
-- Use GitHub Actions to build images, run tests (if added), and push images to ECR. Use an Actions job that:
-   1. Runs `npm ci` at repo root
-   2. Runs `npm run build:engine`
-   3. Builds Docker image for `services/ai` and pushes to ECR
-   4. Deploys via Copilot or triggers CloudFormation/Terraform apply.
-- Store AWS credentials in GitHub Secrets and use least-privilege IAM for the CI role.
-
-Security & IAM
-
-- Create an ECS Task Role with permissions to read Secrets Manager secrets and optionally to call other AWS services.
-- If you publish the engine to CodeArtifact or use CodeBuild, create a CI role that can publish artifacts and push to ECR.
-
-Cost & scaling notes
-
-- Start with small Fargate tasks (0.25–0.5 vCPU) and scale based on CPU/Request metrics.
-- Lambda is cheaper for infrequent calls but may be more complex if Genkit dependencies require long-lived connections.
-
-Next steps I can implement
-
-- Add a sample `Dockerfile` under `services/ai/` and a minimal `ecs-copilot` manifest.
-- Create a GitHub Actions workflow template to build & push the AI image and build the engine.
-- Add a simple CloudFormation or Terraform sample for ECS + ALB.
-
-Tell me which of the above you'd like me to implement and I will create the required files and CI templates.
-
-│        ├─ board.ts
-│        ├─ variants.ts
-│        └─ ai
-│           ├─ heuristics.ts
-│           └─ minimax.ts
-├─ services
-│  └─ ai
-│     ├─ package.json
-│     ├─ tsconfig.json
-│     ├─ src
-│     │  ├─ server.ts
-│     │  └─ flows
-│     │     └─ move.ts
-│     └─ .env.example
-└─ apps
-   └─ mobile               # Created via NativeScript CLI (instructions below)
-      └─ README.md         # Setup guide to generate and link the NS app
-
----
-
-Setup: Prereqs
-
-- Node.js 18+ and npm 9+.
-- NativeScript CLI: `npm i -g nativescript`.
-- Android Studio and/or Xcode for device emulators (or real devices).
-- For Genkit LLM provider (optional): a provider key (e.g., Google Gemini or OpenAI) and the Genkit CLI.
-
----
-
-Step 1 — Install and Bootstrap
-
-1) Install dependencies (root workspaces):
-
-   - `npm install`
-
-2) Create the NativeScript app (inside `apps/`):
-
-   - `cd apps`
-   - `ns create mobile --template @nativescript/template-blank-ts`
-   - `cd mobile && npm install`
-
-3) Add Firebase (cloud sync):
-
-   - `npm i @nativescript/firebase-core @nativescript/firebase-auth @nativescript/firebase-firestore`
-
-4) Link the shared engine into the app:
-
-   - At repo root: `npm run build:engine`
-   - In `apps/mobile`: `npm i ../../packages/engine --save`
-   - Import as `import { createGame, bestMove } from '@ttt/engine'`.
-
----
-
-Step 2 — Genkit AI Service
-
-1) Configure provider (example: Google Gemini):
-
-   - `cd services/ai`
-   - `copy .env.example .env` to create your `.env`.
-   - Then in your new `.env`, set `GOOGLE_GENAI_API_KEY=<your_key>` (or use an OpenAI key after adjusting the provider wiring).
-
-2) Install and run:
-
-   - `npm install`
-   - `npm run dev` (runs the Express API on `PORT` 9191 and the Genkit Flow Dev UI on `GENKIT_PORT` 3100; both auto-fall back to the next open port. Set `GENKIT_DISABLE_DEV_UI=true` to skip the UI)
-
-3) Mobile app: set the API base URL (e.g., `http://10.0.2.2:9191` on Android emulator) in a config file and call `/move` with `{ state, config, difficulty }`.
-
----
-
-Step 3 — Run the Mobile App
-
-- Android: `ns run android` (from `apps/mobile`).
-- iOS: `ns run ios` (from `apps/mobile`).
-
----
-
-Engine API (packages/engine)
-
-- `createGame(config: VariantConfig): GameState`
-- `generateMoves(state: GameState): Move[]`
-- `applyMove(state: GameState, move: Move): GameState`
-- `checkWinner(state: GameState): { winner: 'X'|'O'|'Draw'|null }`
-- `evaluate(state: GameState, forPlayer: Player): number`
-- `bestMove(state: GameState, options?: { depth?: number }): Move`
-
-Supported today: Classic, Board Size (3–6), Win Length (3–4), Gravity, Wrap. Other variants are declared and validated; some advanced mechanics are left as TODOs in code stubs with clear guards.
-
----
-
-Difficulty Modes
-
-- Chill: random among safe moves + shallow heuristic (no forks).
-- Balanced: heuristic + limited alpha‑beta search.
-- Sharp: deeper alpha‑beta or perfect play for 3x3.
-
----
-
-Result Screen (Mobile)
-
-- Confetti animation with CSS.
-- Match facts: variant toggles, turns, accuracy (blunders), win path overlay.
-- Replay: scrub through moves, auto‑play, share gif (stretch goal).
-- CTA: Rematch with same variants; change variants; difficulty toggle.
-
----
-
-Player Data & Achievements
-
-- Local: store profile and progress in app storage; sync when signed in.
-- Cloud (optional): Firebase Auth + Firestore via `@nativescript/firebase`.
-- Data model:
-  - `users/{uid}/profile` — name, avatar, createdAt.
-  - `users/{uid}/achievements/{id}` — unlockedAt, progress.
-  - `users/{uid}/matches/{matchId}` — config, moves[], winner, duration, createdAt.
-
-Sample Achievements
-
-- First Win, Flawless (no mistakes), Fork Master, Center Skeptic (win without center), Streak 3/5/10, Variant Explorer (play 5 variants), Gravity Guru, Misere Mindset, Chaos Wrangler.
-
----
-
-NativeScript App Structure (suggested)
-
-apps/mobile/app
-- app.ts                      # bootstrap
-- app-root.xml                # Frame/Router
-- app.css                     # theme
-- pages
-  - home
-    - home-page.xml/ts/css    # variant toggles + difficulty + start
-  - game
-    - game-page.xml/ts/css    # grid/board, animations, power UI, inline results
-  - profile
-    - profile-page.xml/ts/css # achievements
-- services
-  - api.ts                    # calls Genkit AI service
-  - storage.ts                # local/Firebase persistence
-- state
-  - store.ts                  # simple game/app state
-
----
-
-Security and Sync Notes
-
-- If enabling cloud sync, add Firestore security rules to restrict users to their own data.
-- Keep replay payloads compact: store move list + seed; recompute derived stats on demand.
-
----
-
-Next Steps
-
-1) Generate the NativeScript app under `apps/mobile` and wire the engine.
-2) Run the Genkit AI service and test `/move` from the app.
-3) Implement UI flows (home → game with inline result + replay).
-4) Add achievements tracking, then optional Firebase auth/sync.
-5) Iterate on variants and animations.
+- Game rules and logic belong in `packages/engine/src`. Exported types live in `types.ts`.
+- If you change the `/move` API shape or move types, update both `services/ai` and `apps/mobile/app/services/api.ts`.
+- Avoid editing NativeScript UI markup (`*.xml`) without testing on a device or emulator.
+- Do not change app IDs or bundle identifiers without updating Firebase config and `apps/mobile/package.json`.
 
