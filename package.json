@@ -20,5 +20,8 @@
   },
   "devDependencies": {
     "patch-package": "^8.0.1"
+  },
+  "overrides": {
+    "handlebars": "4.7.9"
   }
 }
