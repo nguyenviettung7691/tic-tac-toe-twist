@@ -1,6 +1,6 @@
 # Tic-Tac-Toe Twist
 
-A TypeScript monorepo for a mobile tic-tac-toe game with variant rules, power-ups, and an AI opponent powered by Google Gemini + minimax.
+> **v0.1.0** — TypeScript monorepo for a mobile tic-tac-toe game with variant rules, power-ups, and an AI opponent powered by Google Gemini + minimax.
 
 ## Architecture
 
@@ -156,7 +156,7 @@ checkWinner(state: GameState): Player | 'Draw' | null
 #### AI
 
 ```typescript
-bestMove(state: GameState, forPlayer: Player, opts?: { depth?: number; maxMillis?: number }): Move
+bestMove(state: GameState, forPlayer: Player, opts?: { depth?: number; maxMillis?: number }): Move | null
 evaluate(state: GameState, forPlayer: Player): number
 ```
 
@@ -259,8 +259,10 @@ The AI service selects moves through a tiered strategy:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `PORT` | `9191` | Express server port |
+| `HOST` | `0.0.0.0` | Server bind address |
 | `GOOGLE_GENAI_API_KEY` | — | Google Gemini API key (enables LLM strategy) |
-| `GOOGLE_GENAI_MODEL` | `gemini-2.5-flash-lite` | Gemini model to use |
+| `GOOGLE_GENAI_MODEL` | `gemini-2.5-flash-lite` | Gemini model(s), space/comma-separated |
+| `LLM_SUGGESTION_TIMEOUT_MS` | `10000` | LLM response timeout in ms |
 | `GENKIT_PORT` | `3100` | Genkit Dev UI port |
 | `GENKIT_DISABLE_DEV_UI` | — | Set `true` to disable the Genkit Dev UI |
 | `NODE_ENV` | — | Set `production` to disable the Dev UI |
@@ -307,6 +309,79 @@ npm i ../../packages/engine --save
 ### Android Emulator Networking
 
 The Android emulator uses `10.0.2.2` to reach the host machine. The mobile app's API client handles this automatically, but if running the AI service on a custom port, update accordingly.
+
+## Building & Releasing the Debug APK
+
+### Prerequisites
+
+- Root dependencies installed (`npm install`)
+- Engine built (`npm run build:engine`)
+- Android SDK + emulator or device configured
+- NativeScript CLI installed (`npm i -g nativescript`)
+
+### Build Steps
+
+```powershell
+# 1. Install dependencies
+npm install
+
+# 2. Build the shared engine
+npm run build:engine
+
+# 3. Build the debug APK via NativeScript
+npm run mobile:android
+```
+
+The debug APK is produced at:
+
+```
+apps/mobile/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+Build metadata is in `output-metadata.json` alongside the APK:
+
+```json
+{
+  "applicationId": "com.tictactoetwist",
+  "variantName": "debug",
+  "versionCode": 1,
+  "versionName": "1.0.0"
+}
+```
+
+### Integrity Verification
+
+A `SHA256SUMS.txt` file is generated next to the APK for checksum verification:
+
+```powershell
+# Verify the debug APK checksum (PowerShell)
+$apk = "apps/mobile/platforms/android/app/build/outputs/apk/debug/app-debug.apk"
+$sumFile = "apps/mobile/platforms/android/app/build/outputs/apk/debug/SHA256SUMS.txt"
+$expected = (Get-Content $sumFile).Split(" ",[System.StringSplitOptions]::RemoveEmptyEntries)[0].ToLower()
+$actual = (Get-FileHash -Algorithm SHA256 $apk).Hash.ToLower()
+if ($expected -eq $actual) { "OK: checksum matches" } else { "MISMATCH" }
+```
+
+### Debug APK Release Strategy
+
+1. **Build** — Run `npm run mobile:android` from repo root. The NativeScript helper script handles workspace isolation automatically.
+2. **Verify** — Compare `SHA256SUMS.txt` against the built APK to confirm build integrity.
+3. **Distribute** — Share `app-debug.apk` for testing. Debug builds are signed with the Android debug keystore and are suitable for emulators and sideloading to test devices.
+4. **Document** — The `output-metadata.json` file records `applicationId`, `versionCode`, `versionName`, and `variantName` for traceability.
+
+### Release (Signed) Builds
+
+For production release builds, a release keystore is required. Keep keystore files **outside source control**.
+
+```powershell
+# Generate a release keystore
+keytool -genkeypair -v -keystore tic-tac-toe.keystore -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias tic-tac-toe
+
+# List SHA fingerprints (add to Firebase project settings)
+keytool -list -v -alias tic-tac-toe -keystore .\tic-tac-toe.keystore
+```
+
+Add the SHA-1 / SHA-256 fingerprints to your Firebase project for production Google Sign-In.
 
 ### Editing Guidelines
 

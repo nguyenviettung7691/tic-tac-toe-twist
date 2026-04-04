@@ -1,103 +1,157 @@
-Tic-Tac-Toe-Twist (NativeScript mobile app)
+# Tic-Tac-Toe Twist — Mobile App
 
-This folder contains the NativeScript Core + TypeScript mobile app that uses `@ttt/engine` for game logic and `services/ai` for the Genkit-powered move endpoint.
+NativeScript Core + TypeScript mobile app for Android (and iOS). Uses `@ttt/engine` for local game logic and the AI service (`services/ai`) for remote move computation via Google Gemini + minimax fallback.
 
-Quick setup
+**App ID:** `com.tictactoetwist` · **Version:** 1.0.0 · **Min SDK:** 23
 
-1. From repo root install workspaces:
+## Quick Setup
 
 ```powershell
+# 1. Install all workspaces from repo root
 npm install
-```
 
-2. Build and link the shared engine before running the app (engine must be built so `dist/` is available):
-
-```powershell
+# 2. Build the shared engine (produces packages/engine/dist/)
 npm run build:engine
+
+# 3. Re-link engine into the mobile app
 cd apps/mobile
 npm i ../../packages/engine --save
 ```
 
-Running the app
+## Running the App
 
-- Preferred (from repo root, uses helper to avoid workspace ENOWORKSPACES):
+### Preferred — via helper script (from repo root)
 
 ```powershell
 npm run mobile:android
-# Add extra ns flags after --, e.g.:
+# Pass extra NativeScript flags after --
 npm run mobile:android -- --device emulator-5554
 ```
 
-- Alternative: run `ns` directly but include `--path` to avoid workspace issues:
+The helper (`scripts/ns-mobile-run.js`) wraps `ns run` with `--path apps/mobile` and sets `npm_config_location=global` to avoid the npm-workspace `ENOWORKSPACES` error.
+
+### Alternative — NativeScript CLI directly
 
 ```powershell
 ns run android --path apps/mobile
 ```
 
-Firebase notes
-
-- Replace the placeholder `apps/mobile/App_Resources/Android/src/google-services.json` with your Firebase Android config when you need Google Sign-In.
-- Ensure `apps/mobile/package.json` contains the `nativescript.id` that matches your Firebase Android app (default: `com.tictactoetwist`).
-- Update `apps/mobile/app/config/firebase-client.ts` with your OAuth client ID for Google sign-in.
-
-Engine & AI integration
-
-- The mobile app imports the engine as `@ttt/engine` (see `apps/mobile/package.json`).
-- The mobile app calls the AI service at `/move`. Android emulator mapping: `http://10.0.2.2:9191` (service default). See `apps/mobile/app/services/api.ts`.
-
-Helpful file anchors
-
-- `app/app.ts` — app bootstrap
-- `app/services/api.ts` — calls `/move` on the AI service
-- `app/state/match-store.ts` — match/move persistence and replay handling
-- `App_Resources/Android/src/google-services.json` — Firebase placeholder
-
-Troubleshooting
-
-- If `ns` errors with `ENOWORKSPACES`, use the helper script `scripts/ns-mobile-run.js` (this is what `npm run mobile:android` invokes).
-- If the emulator can't reach the AI API, confirm `services/ai` is running and use `10.0.2.2:9191` from Android.
-
-Testing and debug
-
-- Debugging helper (root):
+### Debug mode
 
 ```powershell
 npm run debug:android
 ```
 
-Release builds & signing
+## App Structure
 
-- For release signing and Firebase production SHA fingerprints follow the usual keytool commands — keep keystore files outside source control.
-
-PowerShell keytool examples (copyable)
-
-Generate a release keystore:
-
-```powershell
-keytool -genkeypair -v -keystore tic-tac-toe.keystore -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias tic-tac-toe
+```
+apps/mobile/
+├── app/
+│   ├── app.ts                     # Bootstrap entry point
+│   ├── app-root.xml               # Frame / router
+│   ├── app.css                    # Global styles
+│   ├── config/
+│   │   └── firebase-client.ts     # Firebase client config & OAuth client ID
+│   ├── services/
+│   │   ├── api.ts                 # AI service HTTP client (/move)
+│   │   ├── engine.ts              # Local engine wrapper (createGame, bestMove)
+│   │   ├── firebase.ts            # Firebase initialisation
+│   │   ├── navigation.ts          # Router integration
+│   │   └── notifier.ts            # Toast / alert notifications
+│   ├── state/
+│   │   ├── game-store.ts          # Game state management (setup, moves, AI)
+│   │   ├── match-store.ts         # Match history & replay persistence
+│   │   ├── auth-store.ts          # Authentication (Firebase + guest)
+│   │   ├── achievement-store.ts   # Achievement tracking & unlocks
+│   │   ├── auth-bindings.ts       # Reactive auth bindings
+│   │   └── badge-bindings.ts      # Reactive badge / UI bindings
+│   ├── home/                      # Home page (variant selection, difficulty)
+│   ├── game/                      # Game page (board UI, moves, results)
+│   ├── account/                   # Login, profile, match detail pages
+│   ├── about/                     # About page
+│   ├── assets/                    # Images and resources
+│   └── utils/
+│       └── game-format.ts         # Display formatting helpers
+├── App_Resources/
+│   ├── Android/src/
+│   │   └── google-services.json   # Firebase config (placeholder)
+│   └── iOS/
+│       └── Info.plist
+├── nativescript.config.ts         # NS config (id, appPath, v8Flags)
+└── package.json                   # Dependencies & NS metadata
 ```
 
-List SHA fingerprints from a keystore:
+## Engine & AI Integration
+
+| Integration | How | File |
+|-------------|-----|------|
+| **Engine** | `@ttt/engine` via `file:../../packages/engine` | `app/services/engine.ts` |
+| **AI Service** | HTTP POST to `/move` | `app/services/api.ts` |
+| **Platform URL** | Android emulator: `http://10.0.2.2:9191`, iOS sim: `http://127.0.0.1:9191` | auto-detected |
+| **Timeouts** | 7 s per move, 15 s for first request (warmup) | `app/services/api.ts` |
+
+## Firebase Setup
+
+1. Replace `App_Resources/Android/src/google-services.json` with your real Firebase config.
+2. Ensure `nativescript.id` in `package.json` matches the Android app ID in your Firebase project (`com.tictactoetwist`).
+3. Update `app/config/firebase-client.ts` with your OAuth client ID for Google Sign-In.
+
+## Dependencies
+
+| Package | Version | Purpose |
+|---------|---------|---------|
+| `@nativescript/core` | ~8.9.0 | NativeScript runtime |
+| `@nativescript/firebase-auth` | ^5.0.2 | Firebase authentication |
+| `@nativescript/firebase-core` | ^5.0.2 | Firebase core |
+| `@nativescript/firebase-firestore` | ^5.0.2 | Firestore cloud sync |
+| `@nativescript/google-signin` | ^2.1.1 | Google Sign-In |
+| `@nativescript/theme` | ^3.1.0 | UI theme |
+| `@ttt/engine` | file link | Shared game engine |
+
+## Debug APK Build
+
+The current debug build output lives at:
+
+```
+platforms/android/app/build/outputs/apk/debug/app-debug.apk
+```
+
+A `SHA256SUMS.txt` file is generated alongside the APK for integrity verification:
 
 ```powershell
+$apk = "apps/mobile/platforms/android/app/build/outputs/apk/debug/app-debug.apk"
+$sumFile = "apps/mobile/platforms/android/app/build/outputs/apk/debug/SHA256SUMS.txt"
+$expected = (Get-Content $sumFile).Split(" ",[System.StringSplitOptions]::RemoveEmptyEntries)[0].ToLower()
+$actual = (Get-FileHash -Algorithm SHA256 $apk).Hash.ToLower()
+if ($expected -eq $actual) { "OK: checksum matches" } else { "MISMATCH" }
+```
+
+## Release Builds & Signing
+
+Keep keystore files **outside source control**.
+
+```powershell
+# Generate a release keystore
+keytool -genkeypair -v -keystore tic-tac-toe.keystore -storetype JKS -keyalg RSA -keysize 2048 -validity 10000 -alias tic-tac-toe
+
+# List SHA fingerprints
 keytool -list -v -alias tic-tac-toe -keystore .\tic-tac-toe.keystore
 ```
 
-Add the printed SHA-1 / SHA-256 values to your Firebase project settings so Google Sign-In works in production.
+Add the SHA-1 / SHA-256 values to your Firebase project settings for production Google Sign-In.
 
-PowerShell: extract only SHA-1 or SHA-256 (copyable)
+## Troubleshooting
 
-```powershell
-# SHA-1 only
-(& keytool -list -v -alias tic-tac-toe -keystore .\tic-tac-toe.keystore) -match 'SHA1:\s*([0-9A-Fa-f:]*)' | Out-Null; $matches[1]
+| Problem | Fix |
+|---------|-----|
+| `ENOWORKSPACES` when running `ns` | Use `npm run mobile:android` (invokes `scripts/ns-mobile-run.js`) |
+| Emulator can't reach AI API | Confirm `services/ai` is running; Android uses `10.0.2.2:9191` |
+| Firebase Google Sign-In fails | Replace placeholder `google-services.json` and match app ID |
+| Engine changes not picked up | Rebuild: `npm run build:engine`, then re-link from `apps/mobile` |
 
-# SHA-256 only
-(& keytool -list -v -alias tic-tac-toe -keystore .\tic-tac-toe.keystore) -match 'SHA256:\s*([0-9A-Fa-f:]*)' | Out-Null; $matches[1]
-```
+## See Also
 
-Where to look for more details
-
-- Root `README.md` — overall architecture and developer workflow.
-- `packages/engine/README.md` — engine API and build notes.
-- `services/ai/README.md` — AI service API and setup.
+- Root `README.md` — architecture overview and developer workflow
+- `packages/engine/README.md` — engine API and build notes
+- `services/ai/README.md` — AI service API and setup
 
