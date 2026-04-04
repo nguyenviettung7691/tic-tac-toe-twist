@@ -300,10 +300,12 @@ function resolveBomb(state: GameState, move: Move): { board: Cell[][]; target: M
   if (!usage || usage[state.current]) {
     return null;
   }
-  if (typeof move.r !== 'number' || typeof move.c !== 'number') {
+  if (typeof move.r !== 'number' || typeof move.c !== 'number'
+    || !Number.isInteger(move.r) || !Number.isInteger(move.c)) {
     return null;
   }
-  const { r, c } = move;
+  const r: number = move.r;
+  const c: number = move.c;
   const n = state.board.length;
   if (!inBounds(n, r, c)) {
     return null;
