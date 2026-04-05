@@ -2,7 +2,7 @@
 
 Node.js + Express + Genkit microservice that computes AI moves for Tic-Tac-Toe Twist. Uses Google Gemini LLM suggestions with engine-based minimax fallback.
 
-**Version:** 0.1.0 · **Default port:** 9191 · **Genkit Dev UI:** 3100
+**Version:** 0.2.0 · **Default port:** 9191 · **Genkit Dev UI:** 3100
 
 ## Quick Start
 
@@ -36,7 +36,7 @@ npm --workspace services/ai run dev
 
 ```
 services/ai/
-├── package.json            # @ttt/ai-service v0.1.0
+├── package.json            # @ttt/ai-service v0.2.0
 ├── tsconfig.json
 ├── .env.example            # Environment template
 └── src/
@@ -121,7 +121,7 @@ The service selects moves through a tiered strategy:
 
 | Package | Version | Purpose |
 |---------|---------|---------|
-| `@ttt/engine` | ^0.1.0 | Shared game engine (minimax, rules) |
+| `@ttt/engine` | ^0.2.0 | Shared game engine (minimax, rules) |
 | `express` | ^4.19.2 | HTTP server |
 | `zod` | ^3.23.8 | Request validation |
 | `@genkit-ai/core` | ^1.19.2 | Genkit flow framework |

@@ -2,7 +2,7 @@
 
 Pure TypeScript game engine for Tic-Tac-Toe Twist — board model, variant system, move generation, heuristics, and minimax search with alpha-beta pruning.
 
-**Version:** 0.1.0 · **Module:** ESM · **Runtime deps:** none
+**Version:** 0.2.0 · **Module:** ESM · **Runtime deps:** none
 
 ## Purpose
 
@@ -29,7 +29,7 @@ npm run clean               # rimraf dist/
 
 ```
 packages/engine/
-├── package.json            # @ttt/engine v0.1.0
+├── package.json            # @ttt/engine v0.2.0
 ├── tsconfig.json
 └── src/
     ├── index.ts            # Public API re-exports

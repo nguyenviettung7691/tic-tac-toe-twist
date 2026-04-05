@@ -1,6 +1,6 @@
 # Tic-Tac-Toe Twist
 
-> **v0.1.0** — TypeScript monorepo for a mobile tic-tac-toe game with variant rules, power-ups, and an AI opponent powered by Google Gemini + minimax.
+> **v0.2.0** — TypeScript monorepo for a mobile tic-tac-toe game with variant rules, power-ups, and an AI opponent powered by Google Gemini + minimax.
 
 ## Architecture
 
