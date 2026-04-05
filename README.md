@@ -1,6 +1,6 @@
 # Tic-Tac-Toe Twist
 
-> **v0.2.0** — TypeScript monorepo for a mobile tic-tac-toe game with variant rules, power-ups, and an AI opponent powered by Google Gemini + minimax.
+> **v0.3.0** — TypeScript monorepo for a mobile tic-tac-toe game with variant rules, power-ups, and an AI opponent powered by Google Gemini + minimax.
 
 ## Architecture
 
@@ -475,6 +475,16 @@ Build metadata is in `output-metadata.json` alongside the APK:
 ```
 
 ### Integrity Verification
+
+Build the debug APK first as the above step.
+
+```powershell
+# Generate checksum file next to the APK (Powershell):
+$apk = "apps/mobile/platforms/android/app/build/outputs/apk/debug/app-debug.apk"
+$sumFile = "apps/mobile/platforms/android/app/build/outputs/apk/debug/SHA256SUMS.txt"
+$hash = (Get-FileHash -Algorithm SHA256 $apk).Hash.ToLower()
+"$hash app-debug.apk" | Set-Content -Encoding ascii $sumFile
+```
 
 A `SHA256SUMS.txt` file is generated next to the APK for checksum verification:
 
