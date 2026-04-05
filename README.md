@@ -7,7 +7,7 @@
 | Component | Path | Description |
 |-----------|------|-------------|
 | **Game Engine** | `packages/engine` | Pure TypeScript library — board model, rules, move generation, heuristics, and minimax with alpha-beta pruning. Published as `@ttt/engine`. |
-| **AI Service** | `services/ai` | Node.js + Express + Genkit microservice exposing a `/move` HTTP endpoint. Uses LLM suggestions (Google Gemini) with engine-based fallback. |
+| **AI Service** | `services/ai` | Node.js + Express + Genkit microservice exposing a `/move` HTTP endpoint. Uses LLM suggestions (Google Gemini) with engine-based fallback. Deployable as a Firebase Cloud Function. |
 | **Mobile App** | `apps/mobile` | NativeScript Core app (TypeScript) — game UI, variant selection, achievements, match history, and Firebase authentication. |
 
 The project uses **npm workspaces** (defined in the root `package.json`). Always run `npm install` from the repo root.
@@ -17,6 +17,8 @@ The project uses **npm workspaces** (defined in the root `package.json`). Always
 ```
 tic-tac-toe-twist/
 ├── package.json                         # Root workspace config & scripts
+├── firebase.json                        # Firebase Cloud Functions config
+├── .firebaserc                          # Firebase project link
 ├── scripts/
 │   └── ns-mobile-run.js                 # NativeScript helper (avoids ENOWORKSPACES)
 ├── patches/                             # patch-package patches
@@ -36,9 +38,12 @@ tic-tac-toe-twist/
 │   └── ai/
 │       ├── package.json                 # @ttt/ai-service
 │       ├── tsconfig.json
+│       ├── esbuild.config.mjs           # esbuild bundler (produces dist/index.js)
 │       ├── .env.example                 # Environment config template
 │       └── src/
-│           ├── server.ts                # Express HTTP server & routing
+│           ├── app.ts                   # Shared Express app (routes & middleware)
+│           ├── server.ts                # Local dev entry point (app.listen)
+│           ├── index.ts                 # Cloud Function entry point (onRequest)
 │           ├── genkit.ts                # Genkit flow registration & dev UI
 │           └── flows/
 │               └── move.ts              # AI decision engine (LLM + engine fallback)
@@ -134,7 +139,8 @@ npm run mobile:android -- --device emulator-5554
 |--------|---------|-------------|
 | `build:engine` | `npm run build:engine` | Build `packages/engine` (tsc → `dist/`) |
 | `dev:ai` | `npm run dev:ai` | Start AI service dev server + Genkit UI |
-| `build:ai` | `npm run build:ai` | Build AI service for production |
+| `build:ai` | `npm run build:ai` | Bundle AI service for production (esbuild → `dist/`) |
+| `deploy:ai` | `npm run deploy:ai` | Build engine + deploy AI service to Firebase Cloud Functions |
 | `mobile:android` | `npm run mobile:android` | Run mobile app on Android via helper script |
 | `debug:android` | `npm run debug:android` | Debug mobile app on Android emulator |
 
@@ -266,6 +272,125 @@ The AI service selects moves through a tiered strategy:
 | `GENKIT_PORT` | `3100` | Genkit Dev UI port |
 | `GENKIT_DISABLE_DEV_UI` | — | Set `true` to disable the Genkit Dev UI |
 | `NODE_ENV` | — | Set `production` to disable the Dev UI |
+
+## Deploying the AI Service (Firebase Cloud Functions)
+
+The AI service can be deployed as a **Firebase 2nd-generation Cloud Function** so the mobile app can call it over the internet instead of requiring a local dev server.
+
+### Architecture
+
+```
+┌─────────────────┐       HTTPS        ┌───────────────────────────────────┐
+│  Mobile App     │  ──────────────►   │  Firebase Cloud Function (api)   │
+│  (NativeScript) │                    │  ─ Express app (app.ts)          │
+│                 │  ◄──────────────   │  ─ /health, /move endpoints     │
+└─────────────────┘    JSON response   │  ─ @ttt/engine (bundled)        │
+                                       │  ─ Google Gemini LLM            │
+                                       └───────────────────────────────────┘
+```
+
+The Express app is shared between local development (`server.ts`) and the Cloud Function (`index.ts`). The esbuild bundler inlines all workspace dependencies (including `@ttt/engine`) so Firebase deployment doesn't need npm workspace resolution.
+
+### Prerequisites
+
+- **Firebase CLI**: `npm i -g firebase-tools`
+- **Authenticated**: `firebase login`
+- **Firebase project**: The repo is linked to `tictactoetwist-472303` via `.firebaserc`
+
+### Configuration
+
+#### 1. Set the Gemini API key as a Firebase secret
+
+```bash
+firebase functions:secrets:set GOOGLE_GENAI_API_KEY
+# Paste your Google Gemini API key when prompted
+```
+
+The Cloud Function entry point (`src/index.ts`) declares this secret using `defineSecret()` so it is automatically injected at runtime.
+
+#### 2. Optional: Set the Gemini model
+
+The default model is `gemini-2.5-flash-lite`. To change it, set the `GOOGLE_GENAI_MODEL` environment variable in the Cloud Function configuration:
+
+```bash
+firebase functions:config:set ai.model="gemini-2.5-flash"
+```
+
+### Build & Deploy
+
+```bash
+# From repo root — builds engine, bundles the function, and deploys
+npm run deploy:ai
+```
+
+Or step by step:
+
+```bash
+# 1. Build the game engine (required — the bundler inlines it)
+npm run build:engine
+
+# 2. Bundle the Cloud Function with esbuild
+npm run build:ai
+
+# 3. Deploy to Firebase
+firebase deploy --only functions
+```
+
+After deployment, the CLI prints the function URL:
+
+```
+✔  functions[api(us-central1)]: Successful create/update
+   https://api-<hash>-uc.a.run.app
+```
+
+### Testing the Deployment
+
+```bash
+# Health check
+curl https://<function-url>/health
+# Expected: {"ok":true}
+
+# Request a move
+curl -X POST https://<function-url>/move \
+  -H "Content-Type: application/json" \
+  -d '{"state":{"board":[[null,null,null],[null,null,null],[null,null,null]],"turn":"X","moveCount":0,"powers":{"X":{"doubleMove":false,"bomb":false,"laneShift":false},"O":{"doubleMove":false,"bomb":false,"laneShift":false}}},"config":{"boardSize":3,"winLength":3,"gravity":false,"wrap":false,"misere":false,"randomBlocks":0,"doubleMove":false,"laneShift":false,"bomb":false,"chaosMode":false},"difficulty":"balanced"}'
+```
+
+### Connecting the Mobile App
+
+The mobile app's API client (`apps/mobile/app/services/api.ts`) automatically probes candidate URLs including the Cloud Function URL. To explicitly point the app at your deployed function:
+
+- **Option A** — Set the `API_BASE_URL` environment variable before building the mobile app
+- **Option B** — Call `setApiBaseUrl('https://<function-url>')` at app startup
+- **Option C** — The app includes the Cloud Function URL as a probe candidate and will auto-discover it if reachable
+
+### Local Development
+
+Local development is **unchanged** — the existing workflow still works:
+
+```bash
+npm run dev:ai          # Starts Express on port 9191 + Genkit Dev UI on 3100
+```
+
+The Cloud Function entry point (`index.ts`) sets `NODE_ENV=production` to disable the Genkit Dev UI. The local dev entry point (`server.ts`) does not, so the Dev UI remains available during development.
+
+### Project Structure (Cloud Function Files)
+
+| File | Purpose |
+|------|---------|
+| `firebase.json` | Firebase project configuration (functions source, runtime) |
+| `.firebaserc` | Links repo to Firebase project `tictactoetwist-472303` |
+| `services/ai/src/app.ts` | Shared Express app — routes and middleware |
+| `services/ai/src/index.ts` | Cloud Function entry point — wraps app with `onRequest()` |
+| `services/ai/src/server.ts` | Local dev entry point — imports app and calls `listen()` |
+| `services/ai/esbuild.config.mjs` | esbuild bundler config — produces `dist/index.js` |
+
+### Cost & Performance Notes
+
+- **Cold starts**: 2nd-gen functions run on Cloud Run. Expect 2–5 s cold-start latency for the first request after idle. The `minInstances: 0` setting means no cost when idle but slower first response.
+- **Memory**: Configured at 512 MiB — sufficient for the minimax engine and LLM client.
+- **Timeout**: 60 s per request — well within the function limit.
+- **Free tier**: Firebase Blaze (pay-as-you-go) plan is required for Cloud Functions. The free tier includes 2 million invocations/month.
 
 ## Mobile App (`apps/mobile`)
 

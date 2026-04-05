@@ -19,14 +19,14 @@ export interface MoveRequestBody {
 /**
  * Production Cloud Function URL for the deployed AI service.
  * Format: https://api-<hash>-<region>.a.run.app  (Firebase 2nd-gen)
- *         or https://<region>-<project>.cloudfunctions.net/api  (1st-gen)
  *
- * Set via the API_BASE_URL env variable or `setApiBaseUrl()` at runtime.
- * When no env var is set this constant is used as an additional probe
- * candidate so the mobile app can auto-discover the deployed service.
+ * After deploying with `npm run deploy:ai`, the CLI prints the function URL.
+ * Set it here so the mobile app can auto-discover the deployed service,
+ * or configure via the API_BASE_URL env variable / `setApiBaseUrl()` at runtime.
+ *
+ * Set to `null` to skip Cloud Function probing (local dev only).
  */
-const CLOUD_FUNCTION_BASE_URL: string | null =
-  'https://api-tictactoetwist-472303.cloudfunctions.net';
+const CLOUD_FUNCTION_BASE_URL: string | null = null;
 
 const DEFAULT_PORT = resolvePort();
 const DEFAULT_BASE_URL = resolveDefaultBaseUrl();
@@ -220,7 +220,9 @@ function normalizeBaseUrl(value: string): string {
 
   try {
     const url = new URL(/^https?:\/\//i.test(trimmed) ? trimmed : `http://${trimmed}`);
-    if (!url.port) {
+    // Only force DEFAULT_PORT on plain http:// URLs without an explicit port.
+    // HTTPS URLs (e.g. Cloud Function URLs) use standard port 443 implicitly.
+    if (!url.port && url.protocol === 'http:') {
       url.port = `${DEFAULT_PORT}`;
     }
     url.pathname = '';
