@@ -34,3 +34,6 @@ apps/mobile/App_Resources/Android/*.jks
 .tmp/
 tmp/
 temp/
+
+### Firebase
+.firebase/

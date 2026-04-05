@@ -1,0 +1,12 @@
+{
+  "functions": [
+    {
+      "source": "services/ai",
+      "codebase": "ai-service",
+      "runtime": "nodejs20",
+      "predeploy": [
+        "npm --prefix \"$RESOURCE_DIR\" run build"
+      ]
+    }
+  ]
+}
