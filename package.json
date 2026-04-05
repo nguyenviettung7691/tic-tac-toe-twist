@@ -11,6 +11,7 @@
     "build:engine": "npm --workspace packages/engine run build",
     "dev:ai": "npm --workspace services/ai run dev",
     "build:ai": "npm --workspace services/ai run build",
+    "deploy:ai": "npm run build:engine && firebase deploy --only functions",
     "mobile:android": "node scripts/ns-mobile-run.js",
     "debug:android": "npx nativescript@latest debug android --emulator --path apps/mobile",
     "postinstall": "patch-package"

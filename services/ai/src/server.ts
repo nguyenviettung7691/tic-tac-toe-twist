@@ -1,27 +1,13 @@
 import 'dotenv/config';
-import express from 'express';
 import type { Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 import { createGame, type VariantConfig } from '@ttt/engine';
-import { chooseMove, MoveInput, MoveOutput } from './flows/move.js';
+import { chooseMove, MoveInput } from './flows/move.js';
 import { startGenkitDevUi, stopGenkitDevUi } from './genkit.js';
+import { createApp } from './app.js';
 
-const app = express();
+const app = createApp();
 void startGenkitDevUi();
-app.use(express.json());
-
-app.get('/health', (_req, res) => res.json({ ok: true }));
-
-app.post('/move', async (req, res) => {
-  try {
-    const parsed = MoveInput.parse(req.body);
-    const out = await chooseMove(parsed);
-    MoveOutput.parse(out);
-    res.json(out);
-  } catch (e: any) {
-    res.status(400).json({ error: e.message ?? 'Invalid input' });
-  }
-});
 
 let httpServer: Server | null = null;
 let shuttingDown = false;

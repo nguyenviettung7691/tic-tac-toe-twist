@@ -16,6 +16,18 @@ export interface MoveRequestBody {
   difficulty: Difficulty;
 }
 
+/**
+ * Production Cloud Function URL for the deployed AI service.
+ * Format: https://api-<hash>-<region>.a.run.app  (Firebase 2nd-gen)
+ *         or https://<region>-<project>.cloudfunctions.net/api  (1st-gen)
+ *
+ * Set via the API_BASE_URL env variable or `setApiBaseUrl()` at runtime.
+ * When no env var is set this constant is used as an additional probe
+ * candidate so the mobile app can auto-discover the deployed service.
+ */
+const CLOUD_FUNCTION_BASE_URL: string | null =
+  'https://api-tictactoetwist-472303.cloudfunctions.net';
+
 const DEFAULT_PORT = resolvePort();
 const DEFAULT_BASE_URL = resolveDefaultBaseUrl();
 const ENV_CONFIGURED_BASE_URL = readEnvBaseUrl();
@@ -193,6 +205,9 @@ function collectCandidateBaseUrls(): string[] {
   }
 
   push(`http://localhost:${DEFAULT_PORT}`);
+
+  // Cloud Function URL — tried last as a production fallback
+  push(CLOUD_FUNCTION_BASE_URL);
 
   return candidates;
 }
