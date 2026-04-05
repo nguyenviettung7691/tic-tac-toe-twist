@@ -1,6 +1,6 @@
 # Tic-Tac-Toe Twist
 
-> **v0.3.0** — TypeScript monorepo for a mobile tic-tac-toe game with variant rules, power-ups, and an AI opponent powered by Google Gemini + minimax.
+> **v0.4.0** — TypeScript monorepo for a mobile tic-tac-toe game with variant rules, power-ups, and an AI opponent powered by Google Gemini + minimax.
 
 ## Architecture
 
@@ -142,6 +142,7 @@ npm run mobile:android -- --device emulator-5554
 | `build:ai` | `npm run build:ai` | Bundle AI service for production (esbuild → `dist/`) |
 | `deploy:ai` | `npm run deploy:ai` | Build engine + deploy AI service to Firebase Cloud Functions |
 | `mobile:android` | `npm run mobile:android` | Run mobile app on Android via helper script |
+| `build:apk:debug` | `npm run build:apk:debug` | Build Android debug APK without launching emulator (helper script) |
 | `debug:android` | `npm run debug:android` | Debug mobile app on Android emulator |
 
 ## Game Engine (`packages/engine`)
@@ -453,9 +454,11 @@ npm install
 # 2. Build the shared engine
 npm run build:engine
 
-# 3. Build the debug APK via NativeScript
-npm run mobile:android
+# 3. Build the debug APK (no emulator launch)
+npm run build:apk:debug
 ```
+
+This command uses `scripts/ns-mobile-build.js`, which wraps `ns build` with `--path apps/mobile` and applies the same workspace-safe env tweak used by the run helper.
 
 The debug APK is produced at:
 
@@ -499,7 +502,7 @@ if ($expected -eq $actual) { "OK: checksum matches" } else { "MISMATCH" }
 
 ### Debug APK Release Strategy
 
-1. **Build** — Run `npm run mobile:android` from repo root. The NativeScript helper script handles workspace isolation automatically.
+1. **Build** — Run `npm run build:apk:debug` from repo root to generate the APK without launching an emulator.
 2. **Verify** — Compare `SHA256SUMS.txt` against the built APK to confirm build integrity.
 3. **Distribute** — Share `app-debug.apk` for testing. Debug builds are signed with the Android debug keystore and are suitable for emulators and sideloading to test devices.
 4. **Document** — The `output-metadata.json` file records `applicationId`, `versionCode`, `versionName`, and `variantName` for traceability.

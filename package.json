@@ -1,7 +1,7 @@
 {
   "name": "tic-tac-toe-twist",
   "private": true,
-  "version": "0.3.0",
+  "version": "0.4.0",
   "workspaces": [
     "packages/*",
     "services/*",
@@ -13,6 +13,7 @@
     "build:ai": "npm --workspace services/ai run build",
     "deploy:ai": "npm run build:engine && firebase deploy --only functions",
     "mobile:android": "node scripts/ns-mobile-run.js",
+    "build:apk:debug": "node scripts/ns-mobile-build.js",
     "debug:android": "npx nativescript@latest debug android --emulator --path apps/mobile",
     "postinstall": "patch-package"
   },

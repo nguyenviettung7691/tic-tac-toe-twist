@@ -110,6 +110,12 @@ apps/mobile/
 
 ## Debug APK Build
 
+Build a debug APK from the repo root without launching an emulator:
+
+```powershell
+npm run build:apk:debug
+```
+
 The current debug build output lives at:
 
 ```
